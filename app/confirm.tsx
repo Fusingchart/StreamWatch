@@ -1,18 +1,13 @@
 import { useState } from 'react';
 import {
-  View,
-  Text,
-  Image,
-  TouchableOpacity,
-  StyleSheet,
-  ActivityIndicator,
-  Alert,
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
+  View, Text, Image, TouchableOpacity,
+  StyleSheet, ActivityIndicator, Alert,
+  ScrollView, StatusBar, SafeAreaView,
 } from 'react-native';
+import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
-import { ChevronLeft, Send, Trash2, AlertTriangle, CheckCircle } from 'lucide-react-native';
+import { ChevronLeft, Send, Trash2, AlertTriangle, CheckCircle, MapPin } from 'lucide-react-native';
 import { uploadPhoto, submitSighting } from '../src/services/sightings';
 import { useAppStore } from '../src/store';
 import { POLLUTION_CLASSES } from '../src/constants/pollution';
@@ -20,9 +15,14 @@ import { getSeverity } from '../src/utils/routing';
 import { getCounty } from '../src/utils/geocode';
 import { colors, font, radius, space } from '../src/constants/theme';
 
-const SEVERITY_COLOR = { HIGH: colors.high, MEDIUM: colors.warning, NONE: colors.success };
-const SEVERITY_BG = { HIGH: '#FFF0EE', MEDIUM: '#FFF8EE', NONE: '#EDFAF1' };
-const SEVERITY_LABEL = { HIGH: 'High severity — agency will be notified', MEDIUM: 'Medium severity — agency will be notified', NONE: 'No pollution detected' };
+const SEV_COLOR = { HIGH: colors.high, MEDIUM: colors.warning, NONE: colors.none };
+const SEV_BG = { HIGH: colors.high + '18', MEDIUM: colors.warning + '18', NONE: colors.none + '18' };
+const SEV_BORDER = { HIGH: colors.high + '44', MEDIUM: colors.warning + '44', NONE: colors.none + '44' };
+const SEV_LABEL = {
+  HIGH: 'High severity — agency will be notified',
+  MEDIUM: 'Medium severity — agency will be notified',
+  NONE: 'No pollution detected — no action needed',
+};
 
 export default function ConfirmScreen() {
   const { lat, lng } = useLocalSearchParams<{ lat: string; lng: string }>();
@@ -44,8 +44,7 @@ export default function ConfirmScreen() {
 
   const meta = POLLUTION_CLASSES[pendingResult.pollutionClass];
   const severity = getSeverity(pendingResult.pollutionClass);
-  const sevColor = SEVERITY_COLOR[severity];
-  const sevBg = SEVERITY_BG[severity];
+  const sevColor = SEV_COLOR[severity];
   const latitude = parseFloat(lat ?? '0');
   const longitude = parseFloat(lng ?? '0');
   const confidence = Math.round(pendingResult.confidence * 100);
@@ -60,31 +59,26 @@ export default function ConfirmScreen() {
       ]);
 
       const id = await submitSighting({
-        userId,
-        pollutionClass: pendingResult.pollutionClass,
-        severity,
-        confidence: pendingResult.confidence,
-        latitude,
-        longitude,
-        county,
-        photoUrl,
+        userId, pollutionClass: pendingResult.pollutionClass,
+        severity, confidence: pendingResult.confidence,
+        latitude, longitude, county, photoUrl,
       });
 
       addSighting({
-        id, userId,
-        pollutionClass: pendingResult.pollutionClass,
+        id, userId, pollutionClass: pendingResult.pollutionClass,
         severity, confidence: pendingResult.confidence,
         latitude, longitude, county, photoUrl,
-        reportedAt: new Date(),
-        agencyEmailed: null,
-        hidden: false,
+        reportedAt: new Date(), agencyEmailed: null, hidden: false,
       });
 
       clearPending();
       router.replace('/');
-      Alert.alert('Reported!', severity !== 'NONE'
-        ? 'Your report has been submitted and the relevant agency has been notified.'
-        : 'Sighting recorded. No pollution detected.');
+      Alert.alert(
+        severity !== 'NONE' ? 'Report Submitted' : 'Sighting Recorded',
+        severity !== 'NONE'
+          ? 'The relevant agency has been notified.'
+          : 'No pollution detected at this location.'
+      );
     } catch (e: any) {
       Alert.alert('Submission Failed', e.message ?? 'Please try again.');
     } finally {
@@ -98,151 +92,154 @@ export default function ConfirmScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" />
+      <Image source={{ uri: pendingPhotoUri }} style={StyleSheet.absoluteFill} blurRadius={4} />
+      <LinearGradient
+        colors={['rgba(0,0,0,0.35)', 'rgba(0,0,0,0.85)']}
+        style={StyleSheet.absoluteFill}
+      />
 
-      {/* Nav */}
-      <View style={styles.nav}>
-        <TouchableOpacity onPress={handleDiscard} style={styles.backBtn}>
-          <ChevronLeft size={20} color={colors.text} strokeWidth={2.5} />
-        </TouchableOpacity>
-        <Text style={styles.navTitle}>Review Report</Text>
-        <View style={{ width: 36 }} />
-      </View>
+      <SafeAreaView style={{ flex: 1 }}>
+        {/* Nav */}
+        <View style={styles.nav}>
+          <TouchableOpacity onPress={handleDiscard} activeOpacity={0.7}>
+            <BlurView intensity={50} tint="dark" style={styles.navBtn}>
+              <ChevronLeft size={18} color="#fff" strokeWidth={2.5} />
+            </BlurView>
+          </TouchableOpacity>
+          <Text style={styles.navTitle}>Review Report</Text>
+          <View style={{ width: 38 }} />
+        </View>
 
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        {/* Photo */}
-        <Image source={{ uri: pendingPhotoUri }} style={styles.photo} />
-
-        {/* Classification result */}
-        <View style={styles.resultCard}>
-          <View style={[styles.resultAccent, { backgroundColor: meta.color }]} />
-          <View style={styles.resultBody}>
-            <Text style={styles.resultClass}>{meta.label}</Text>
-            <View style={styles.resultRow}>
-              <View style={styles.confBar}>
-                <View style={[styles.confFill, { width: `${confidence}%` as any, backgroundColor: meta.color }]} />
-              </View>
-              <Text style={[styles.confLabel, { color: meta.color }]}>{confidence}%</Text>
+        <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+          {/* Classification card */}
+          <BlurView intensity={50} tint="dark" style={styles.card}>
+            <View style={[styles.classIconWrap, { backgroundColor: meta.color + '22' }]}>
+              <View style={[styles.classIconDot, { backgroundColor: meta.color }]} />
             </View>
-          </View>
-        </View>
+            <View style={styles.classBody}>
+              <Text style={styles.className}>{meta.label}</Text>
+              <View style={styles.confRow}>
+                <View style={styles.confTrack}>
+                  <View style={[styles.confFill, { width: `${confidence}%` as any, backgroundColor: meta.color }]} />
+                </View>
+                <Text style={[styles.confPct, { color: meta.color }]}>{confidence}%</Text>
+              </View>
+            </View>
+          </BlurView>
 
-        {/* Severity banner */}
-        <View style={[styles.severityBanner, { backgroundColor: sevBg }]}>
-          {severity === 'NONE'
-            ? <CheckCircle size={18} color={sevColor} strokeWidth={2} />
-            : <AlertTriangle size={18} color={sevColor} strokeWidth={2} />}
-          <Text style={[styles.severityText, { color: sevColor }]}>
-            {SEVERITY_LABEL[severity]}
-          </Text>
-        </View>
-
-        {/* Location row */}
-        {latitude !== 0 && (
-          <View style={styles.metaRow}>
-            <Text style={styles.metaLabel}>Location</Text>
-            <Text style={styles.metaValue}>{latitude.toFixed(4)}, {longitude.toFixed(4)}</Text>
-          </View>
-        )}
-
-        <View style={styles.actions}>
-          <TouchableOpacity
-            style={[styles.btn, styles.submitBtn, submitting && styles.btnDisabled]}
-            onPress={handleSubmit}
-            disabled={submitting}
+          {/* Severity banner */}
+          <BlurView
+            intensity={50} tint="dark"
+            style={[styles.sevBanner, { borderColor: SEV_BORDER[severity] }]}
           >
-            {submitting ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <>
-                <Send size={16} color="#fff" strokeWidth={2} />
-                <Text style={styles.submitText}>Submit Report</Text>
-              </>
-            )}
-          </TouchableOpacity>
+            <View style={[styles.sevIconWrap, { backgroundColor: SEV_BG[severity] }]}>
+              {severity === 'NONE'
+                ? <CheckCircle size={16} color={sevColor} strokeWidth={2} />
+                : <AlertTriangle size={16} color={sevColor} strokeWidth={2} />}
+            </View>
+            <Text style={[styles.sevLabel, { color: sevColor }]}>{SEV_LABEL[severity]}</Text>
+          </BlurView>
 
-          <TouchableOpacity style={[styles.btn, styles.discardBtn]} onPress={handleDiscard}>
-            <Trash2 size={16} color={colors.textSecondary} strokeWidth={2} />
-            <Text style={styles.discardText}>Discard</Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+          {/* Location */}
+          {latitude !== 0 && (
+            <BlurView intensity={50} tint="dark" style={styles.card}>
+              <MapPin size={16} color={colors.textSecondary} strokeWidth={1.8} />
+              <Text style={styles.locText}>
+                {latitude.toFixed(4)}, {longitude.toFixed(4)}
+              </Text>
+            </BlurView>
+          )}
+
+          {/* Actions */}
+          <View style={styles.actions}>
+            <TouchableOpacity
+              onPress={handleSubmit}
+              disabled={submitting}
+              activeOpacity={0.85}
+              style={[styles.submitBtn, submitting && { opacity: 0.6 }]}
+            >
+              {submitting
+                ? <ActivityIndicator color="#fff" />
+                : <>
+                    <Send size={16} color="#fff" strokeWidth={2} />
+                    <Text style={styles.submitText}>Submit Report</Text>
+                  </>
+              }
+            </TouchableOpacity>
+
+            <TouchableOpacity onPress={handleDiscard} activeOpacity={0.7}>
+              <BlurView intensity={40} tint="dark" style={styles.discardBtn}>
+                <Trash2 size={15} color={colors.textSecondary} strokeWidth={1.8} />
+                <Text style={styles.discardText}>Discard</Text>
+              </BlurView>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg },
+  container: { flex: 1, backgroundColor: '#000' },
+
   nav: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: 'row', alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: space.md,
-    paddingVertical: 12,
+    paddingHorizontal: space.md, paddingVertical: 12,
   },
-  backBtn: {
-    width: 36, height: 36, borderRadius: radius.full,
-    backgroundColor: colors.card,
+  navBtn: {
+    width: 38, height: 38, borderRadius: radius.full,
+    overflow: 'hidden', alignItems: 'center', justifyContent: 'center',
+    borderWidth: 0.5, borderColor: colors.border,
+  },
+  navTitle: { fontSize: font.size.lg, fontWeight: font.weight.semibold, color: '#fff' },
+
+  scroll: { paddingHorizontal: space.md, paddingBottom: 40, gap: 10 },
+
+  card: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    padding: 14, borderRadius: radius.md,
+    overflow: 'hidden', borderWidth: 0.5, borderColor: colors.border,
+  },
+  classIconWrap: {
+    width: 44, height: 44, borderRadius: radius.sm,
     alignItems: 'center', justifyContent: 'center',
-    borderWidth: 1, borderColor: colors.border,
   },
-  navTitle: { fontSize: font.size.lg, fontWeight: font.weight.semibold, color: colors.text },
-
-  scroll: { paddingHorizontal: space.md, paddingBottom: 40 },
-
-  photo: {
-    width: '100%', height: 240,
-    borderRadius: radius.lg,
-    marginBottom: space.md,
-    backgroundColor: colors.border,
-  },
-
-  resultCard: {
-    flexDirection: 'row',
-    backgroundColor: colors.card,
-    borderRadius: radius.md,
-    overflow: 'hidden',
-    marginBottom: space.sm,
-    shadowColor: '#000',
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 1,
-  },
-  resultAccent: { width: 5 },
-  resultBody: { flex: 1, padding: 16 },
-  resultClass: { fontSize: font.size.xl, fontWeight: font.weight.bold, color: colors.text, marginBottom: 10 },
-  resultRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  confBar: {
-    flex: 1, height: 6, backgroundColor: colors.border,
+  classIconDot: { width: 16, height: 16, borderRadius: 8 },
+  classBody: { flex: 1 },
+  className: { fontSize: font.size.xl, fontWeight: font.weight.bold, color: '#fff', marginBottom: 8 },
+  confRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  confTrack: {
+    flex: 1, height: 5, backgroundColor: colors.border,
     borderRadius: radius.full, overflow: 'hidden',
   },
   confFill: { height: '100%', borderRadius: radius.full },
-  confLabel: { fontSize: font.size.sm, fontWeight: font.weight.bold, width: 36, textAlign: 'right' },
+  confPct: { fontSize: font.size.sm, fontWeight: font.weight.bold, width: 34, textAlign: 'right' },
 
-  severityBanner: {
-    flexDirection: 'row', alignItems: 'center', gap: 8,
-    padding: 14, borderRadius: radius.md, marginBottom: space.sm,
+  sevBanner: {
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    padding: 14, borderRadius: radius.md,
+    overflow: 'hidden', borderWidth: 0.5,
   },
-  severityText: { fontSize: font.size.sm, fontWeight: font.weight.medium, flex: 1 },
+  sevIconWrap: { width: 30, height: 30, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center' },
+  sevLabel: { flex: 1, fontSize: font.size.sm, fontWeight: font.weight.medium, lineHeight: 18 },
 
-  metaRow: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    backgroundColor: colors.card, borderRadius: radius.md,
-    paddingHorizontal: 16, paddingVertical: 12, marginBottom: space.md,
+  locText: { fontSize: font.size.sm, color: colors.textSecondary, flex: 1 },
+
+  actions: { gap: 10, marginTop: 6 },
+  submitBtn: {
+    backgroundColor: colors.primary,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: 8, paddingVertical: 16, borderRadius: radius.md,
   },
-  metaLabel: { fontSize: font.size.sm, color: colors.textSecondary, fontWeight: font.weight.medium },
-  metaValue: { fontSize: font.size.sm, color: colors.text, fontWeight: font.weight.semibold },
-
-  actions: { gap: space.sm },
-  btn: {
+  submitText: { color: '#fff', fontWeight: font.weight.semibold, fontSize: font.size.md },
+  discardBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
     gap: 8, paddingVertical: 15, borderRadius: radius.md,
+    overflow: 'hidden', borderWidth: 0.5, borderColor: colors.border,
   },
-  submitBtn: { backgroundColor: colors.primary },
-  discardBtn: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border },
-  btnDisabled: { opacity: 0.6 },
-  submitText: { color: '#fff', fontWeight: font.weight.semibold, fontSize: font.size.md },
   discardText: { color: colors.textSecondary, fontWeight: font.weight.medium, fontSize: font.size.md },
 });
