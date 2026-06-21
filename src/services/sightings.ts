@@ -8,7 +8,8 @@ import {
   serverTimestamp,
   Unsubscribe,
 } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { ref, uploadString, getDownloadURL } from 'firebase/storage';
+import * as FileSystem from 'expo-file-system';
 import { db, storage } from './firebase';
 import { Sighting, PollutionClass, Severity } from '../types';
 import { resolveAgency } from '../utils/routing';
@@ -16,10 +17,11 @@ import { resolveAgency } from '../utils/routing';
 const SIGHTINGS = 'sightings';
 
 export async function uploadPhoto(uri: string, userId: string): Promise<string> {
-  const resp = await fetch(uri);
-  const blob = await resp.blob();
+  const base64 = await FileSystem.readAsStringAsync(uri, {
+    encoding: FileSystem.EncodingType.Base64,
+  });
   const storageRef = ref(storage, `sightings/${userId}/${Date.now()}.jpg`);
-  await uploadBytes(storageRef, blob);
+  await uploadString(storageRef, base64, 'base64', { contentType: 'image/jpeg' });
   return getDownloadURL(storageRef);
 }
 
