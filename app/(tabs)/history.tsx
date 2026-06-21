@@ -1,8 +1,9 @@
 import { useEffect } from 'react';
 import {
   View, Text, FlatList, StyleSheet,
-  SafeAreaView, StatusBar,
+  StatusBar,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
 import { subscribeSightings } from '../../src/services/sightings';
 import { useAppStore } from '../../src/store';

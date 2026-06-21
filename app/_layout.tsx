@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { Stack } from 'expo-router';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { signInAnon } from '../src/services/firebase';
 import { useAppStore } from '../src/store';
 
@@ -11,9 +12,11 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="(tabs)" />
-      <Stack.Screen name="confirm" options={{ presentation: 'modal' }} />
-    </Stack>
+    <SafeAreaProvider>
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="confirm" options={{ presentation: 'modal' }} />
+      </Stack>
+    </SafeAreaProvider>
   );
 }
