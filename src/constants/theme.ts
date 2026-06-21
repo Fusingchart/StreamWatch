@@ -1,29 +1,37 @@
 export const colors = {
-  primary: '#1A6BFF',
-  primaryLight: '#E8F0FF',
+  // iOS system blue
+  primary: '#007AFF',
+  primaryLight: 'rgba(0,122,255,0.12)',
+
+  // Semantic
   danger: '#FF3B30',
-  warning: '#FF9500',
-  success: '#34C759',
+  warning: '#FF9F0A',
+  success: '#30D158',
 
-  bg: '#F2F5FA',
-  card: '#FFFFFF',
-  border: '#E4E8EF',
+  // Backgrounds — dark mode friendly
+  bg: '#000000',
+  bgSecondary: '#1C1C1E',
+  card: 'rgba(28,28,30,0.72)',
+  cardLight: 'rgba(255,255,255,0.08)',
+  border: 'rgba(255,255,255,0.12)',
+  borderStrong: 'rgba(255,255,255,0.22)',
 
-  text: '#0D1117',
-  textSecondary: '#5A6478',
-  textMuted: '#9BA5B7',
+  // Text
+  text: '#FFFFFF',
+  textSecondary: 'rgba(255,255,255,0.65)',
+  textMuted: 'rgba(255,255,255,0.35)',
 
-  // Pollution severity
-  high: '#FF3B30',
-  medium: '#FF9500',
-  none: '#34C759',
+  // Severity
+  high: '#FF453A',
+  medium: '#FF9F0A',
+  none: '#30D158',
 };
 
 export const radius = {
   sm: 8,
-  md: 14,
-  lg: 20,
-  xl: 28,
+  md: 13,
+  lg: 18,
+  xl: 26,
   full: 9999,
 };
 
@@ -43,6 +51,7 @@ export const font = {
     lg: 17,
     xl: 22,
     xxl: 28,
+    xxxl: 34,
   },
   weight: {
     regular: '400' as const,
