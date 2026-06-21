@@ -10,7 +10,20 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.fusingchart.streamwatch",
-      "deploymentTarget": "15.0"
+      "deploymentTarget": "15.0",
+      "infoPlist": {
+        "UIApplicationSceneManifest": {
+          "UIApplicationSupportsMultipleScenes": false,
+          "UISceneConfigurations": {
+            "UIWindowSceneSessionRoleApplication": [
+              {
+                "UISceneConfigurationName": "Default Configuration",
+                "UISceneDelegateClassName": "$(PRODUCT_MODULE_NAME).SceneDelegate"
+              }
+            ]
+          }
+        }
+      }
     },
     "android": {
       "package": "com.fusingchart.streamwatch",
