@@ -9,12 +9,14 @@ import {
   StatusBar,
 } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
+import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
 import * as Location from 'expo-location';
 import { router } from 'expo-router';
-import { Zap } from 'lucide-react-native';
+import { Zap, Droplets } from 'lucide-react-native';
 import { classifyImage } from '../../src/services/roboflow';
 import { useAppStore } from '../../src/store';
-import { colors, font, radius } from '../../src/constants/theme';
+import { colors, font, radius, space } from '../../src/constants/theme';
 
 export default function CameraScreen() {
   const [permission, requestPermission] = useCameraPermissions();
@@ -27,15 +29,15 @@ export default function CameraScreen() {
   if (!permission.granted) {
     return (
       <View style={styles.permContainer}>
-        <StatusBar barStyle="dark-content" />
+        <StatusBar barStyle="light-content" />
         <View style={styles.permIcon}>
-          <Zap color={colors.primary} size={36} strokeWidth={2} />
+          <Droplets color={colors.primary} size={34} strokeWidth={1.5} />
         </View>
         <Text style={styles.permTitle}>Camera Access Needed</Text>
         <Text style={styles.permBody}>
-          StreamWatch uses your camera to detect waterway pollution and route reports to the right agency.
+          StreamWatch uses your camera to detect waterway pollution and alert the right agency automatically.
         </Text>
-        <TouchableOpacity style={styles.permButton} onPress={requestPermission}>
+        <TouchableOpacity style={styles.permButton} onPress={requestPermission} activeOpacity={0.8}>
           <Text style={styles.permButtonText}>Enable Camera</Text>
         </TouchableOpacity>
       </View>
@@ -74,169 +76,125 @@ export default function CameraScreen() {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" />
-      <CameraView ref={cameraRef} style={styles.camera} facing="back">
-        {/* Viewfinder corners */}
-        <View style={styles.vfContainer}>
-          <View style={styles.vfTop}>
-            <View style={[styles.corner, styles.cornerTL]} />
-            <View style={[styles.corner, styles.cornerTR]} />
-          </View>
-          <View style={styles.vfBottom}>
-            <View style={[styles.corner, styles.cornerBL]} />
-            <View style={[styles.corner, styles.cornerBR]} />
-          </View>
-        </View>
+      <CameraView ref={cameraRef} style={StyleSheet.absoluteFill} facing="back" />
 
-        {/* Header label */}
+      {/* Top gradient + header */}
+      <LinearGradient
+        colors={['rgba(0,0,0,0.6)', 'transparent']}
+        style={styles.topGradient}
+      >
         <View style={styles.header}>
+          <Droplets color="#fff" size={18} strokeWidth={2} />
           <Text style={styles.headerTitle}>StreamWatch</Text>
-          <Text style={styles.headerSub}>Point at any waterway</Text>
         </View>
+        <Text style={styles.headerSub}>Point camera at any waterway</Text>
+      </LinearGradient>
 
-        {/* Shutter area */}
-        <View style={styles.shutterRow}>
-          {busy ? (
-            <View style={styles.shutterBusy}>
-              <ActivityIndicator color={colors.primary} size="large" />
-              <Text style={styles.analyzingText}>Analyzing…</Text>
-            </View>
-          ) : (
-            <TouchableOpacity onPress={capture} activeOpacity={0.8}>
-              <View style={styles.shutterOuter}>
-                <View style={styles.shutterInner} />
-              </View>
-            </TouchableOpacity>
-          )}
+      {/* Viewfinder */}
+      <View style={styles.vfWrapper} pointerEvents="none">
+        <View style={styles.vfTop}>
+          <View style={[styles.corner, styles.cornerTL]} />
+          <View style={[styles.corner, styles.cornerTR]} />
         </View>
-      </CameraView>
+        <View style={styles.vfBottom}>
+          <View style={[styles.corner, styles.cornerBL]} />
+          <View style={[styles.corner, styles.cornerBR]} />
+        </View>
+      </View>
+
+      {/* Bottom gradient + shutter */}
+      <LinearGradient
+        colors={['transparent', 'rgba(0,0,0,0.7)']}
+        style={styles.bottomGradient}
+      >
+        {busy ? (
+          <BlurView intensity={60} tint="dark" style={styles.analyzingPill}>
+            <ActivityIndicator color="#fff" size="small" />
+            <Text style={styles.analyzingText}>Analyzing…</Text>
+          </BlurView>
+        ) : (
+          <TouchableOpacity onPress={capture} activeOpacity={0.85} style={styles.shutterWrapper}>
+            <View style={styles.shutterOuter}>
+              <View style={styles.shutterInner} />
+            </View>
+          </TouchableOpacity>
+        )}
+      </LinearGradient>
     </View>
   );
 }
 
-const CORNER_SIZE = 22;
-const CORNER_THICKNESS = 3;
-const CORNER_COLOR = 'rgba(255,255,255,0.85)';
+const C = 24;
+const T = 3;
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#000' },
-  camera: { flex: 1 },
 
-  // Permission screen
+  // Permission
   permContainer: {
-    flex: 1,
-    backgroundColor: colors.bg,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 40,
+    flex: 1, backgroundColor: '#000',
+    alignItems: 'center', justifyContent: 'center', padding: 40,
   },
   permIcon: {
-    width: 80,
-    height: 80,
-    borderRadius: radius.xl,
+    width: 80, height: 80, borderRadius: radius.xl,
     backgroundColor: colors.primaryLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 24,
+    alignItems: 'center', justifyContent: 'center', marginBottom: space.lg,
   },
   permTitle: {
-    fontSize: font.size.xl,
-    fontWeight: font.weight.bold,
-    color: colors.text,
-    marginBottom: 12,
-    textAlign: 'center',
+    fontSize: font.size.xl, fontWeight: font.weight.bold,
+    color: colors.text, marginBottom: 12, textAlign: 'center',
   },
   permBody: {
-    fontSize: font.size.md,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    lineHeight: 22,
-    marginBottom: 32,
+    fontSize: font.size.md, color: colors.textSecondary,
+    textAlign: 'center', lineHeight: 22, marginBottom: space.xl,
   },
   permButton: {
     backgroundColor: colors.primary,
-    paddingHorizontal: 32,
-    paddingVertical: 14,
+    paddingHorizontal: 32, paddingVertical: 14,
     borderRadius: radius.full,
   },
-  permButtonText: {
-    color: '#fff',
-    fontWeight: font.weight.semibold,
-    fontSize: font.size.md,
-  },
+  permButtonText: { color: '#fff', fontWeight: font.weight.semibold, fontSize: font.size.md },
 
-  // Viewfinder corners
-  vfContainer: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: 'space-between',
-    padding: 44,
+  // Top
+  topGradient: {
+    position: 'absolute', top: 0, left: 0, right: 0,
+    paddingTop: 60, paddingHorizontal: space.lg, paddingBottom: 40,
   },
-  vfTop: { flexDirection: 'row', justifyContent: 'space-between' },
+  header: { flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 4 },
+  headerTitle: { color: '#fff', fontSize: font.size.lg, fontWeight: font.weight.bold },
+  headerSub: { color: 'rgba(255,255,255,0.55)', fontSize: font.size.sm },
+
+  // Viewfinder
+  vfWrapper: {
+    position: 'absolute', top: 0, bottom: 0, left: 0, right: 0,
+    justifyContent: 'center', padding: 48,
+  },
+  vfTop: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 160 },
   vfBottom: { flexDirection: 'row', justifyContent: 'space-between' },
-  corner: { width: CORNER_SIZE, height: CORNER_SIZE },
-  cornerTL: {
-    borderTopWidth: CORNER_THICKNESS, borderLeftWidth: CORNER_THICKNESS,
-    borderColor: CORNER_COLOR, borderTopLeftRadius: 4,
-  },
-  cornerTR: {
-    borderTopWidth: CORNER_THICKNESS, borderRightWidth: CORNER_THICKNESS,
-    borderColor: CORNER_COLOR, borderTopRightRadius: 4,
-  },
-  cornerBL: {
-    borderBottomWidth: CORNER_THICKNESS, borderLeftWidth: CORNER_THICKNESS,
-    borderColor: CORNER_COLOR, borderBottomLeftRadius: 4,
-  },
-  cornerBR: {
-    borderBottomWidth: CORNER_THICKNESS, borderRightWidth: CORNER_THICKNESS,
-    borderColor: CORNER_COLOR, borderBottomRightRadius: 4,
-  },
+  corner: { width: C, height: C },
+  cornerTL: { borderTopWidth: T, borderLeftWidth: T, borderColor: 'rgba(255,255,255,0.9)', borderTopLeftRadius: 4 },
+  cornerTR: { borderTopWidth: T, borderRightWidth: T, borderColor: 'rgba(255,255,255,0.9)', borderTopRightRadius: 4 },
+  cornerBL: { borderBottomWidth: T, borderLeftWidth: T, borderColor: 'rgba(255,255,255,0.9)', borderBottomLeftRadius: 4 },
+  cornerBR: { borderBottomWidth: T, borderRightWidth: T, borderColor: 'rgba(255,255,255,0.9)', borderBottomRightRadius: 4 },
 
-  // Header
-  header: {
-    position: 'absolute',
-    top: 60,
-    left: 0,
-    right: 0,
-    alignItems: 'center',
+  // Bottom
+  bottomGradient: {
+    position: 'absolute', bottom: 0, left: 0, right: 0,
+    paddingBottom: 110, paddingTop: 60, alignItems: 'center',
   },
-  headerTitle: {
-    color: '#fff',
-    fontSize: font.size.lg,
-    fontWeight: font.weight.bold,
-    letterSpacing: 0.5,
-  },
-  headerSub: {
-    color: 'rgba(255,255,255,0.65)',
-    fontSize: font.size.sm,
-    marginTop: 4,
-  },
-
-  // Shutter
-  shutterRow: {
-    position: 'absolute',
-    bottom: 48,
-    left: 0,
-    right: 0,
-    alignItems: 'center',
-  },
+  shutterWrapper: { alignItems: 'center', justifyContent: 'center' },
   shutterOuter: {
-    width: 76,
-    height: 76,
-    borderRadius: 38,
-    borderWidth: 3,
-    borderColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: 78, height: 78, borderRadius: 39,
+    borderWidth: 3, borderColor: 'rgba(255,255,255,0.9)',
+    alignItems: 'center', justifyContent: 'center',
   },
   shutterInner: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#fff',
+    width: 62, height: 62, borderRadius: 31, backgroundColor: '#fff',
   },
-  shutterBusy: { alignItems: 'center', gap: 10 },
-  analyzingText: {
-    color: '#fff',
-    fontSize: font.size.sm,
-    fontWeight: font.weight.medium,
+  analyzingPill: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    paddingHorizontal: 20, paddingVertical: 12,
+    borderRadius: radius.full, overflow: 'hidden',
   },
+  analyzingText: { color: '#fff', fontSize: font.size.sm, fontWeight: font.weight.medium },
 });
