@@ -49,10 +49,8 @@ function SightingCard({ item }: { item: Sighting }) {
 }
 
 export default function HistoryScreen() {
-  const { sightings, setSightings } = useAppStore((s) => ({
-    sightings: s.sightings,
-    setSightings: s.setSightings,
-  }));
+  const sightings = useAppStore((s) => s.sightings);
+  const setSightings = useAppStore((s) => s.setSightings);
 
   useEffect(() => {
     const unsub = subscribeSightings(setSightings);

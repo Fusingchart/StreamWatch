@@ -8,10 +8,8 @@ import { useAppStore } from '../../src/store';
 import { colors, font, radius, space } from '../../src/constants/theme';
 
 export default function MapScreen() {
-  const { sightings, setSightings } = useAppStore((s) => ({
-    sightings: s.sightings,
-    setSightings: s.setSightings,
-  }));
+  const sightings = useAppStore((s) => s.sightings);
+  const setSightings = useAppStore((s) => s.setSightings);
 
   useEffect(() => {
     const unsub = subscribeSightings(setSightings);
