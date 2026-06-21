@@ -9,7 +9,8 @@
     "description": "AI-powered waterway pollution detection for WA-01. Congressional App Challenge 2026.",
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.fusingchart.streamwatch"
+      "bundleIdentifier": "com.fusingchart.streamwatch",
+      "deploymentTarget": "15.0"
     },
     "android": {
       "package": "com.fusingchart.streamwatch",
