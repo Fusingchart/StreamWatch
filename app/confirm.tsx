@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   View, Text, Image, TouchableOpacity,
   StyleSheet, ActivityIndicator, Alert,
@@ -35,10 +35,13 @@ export default function ConfirmScreen() {
   const addSighting = useAppStore((s) => s.addSighting);
   const clearPending = useAppStore((s) => s.clearPending);
 
-  if (!pendingResult || !pendingPhotoUri) {
-    router.replace('/');
-    return null;
-  }
+  useEffect(() => {
+    if (!pendingResult || !pendingPhotoUri) {
+      router.replace('/');
+    }
+  }, [pendingResult, pendingPhotoUri]);
+
+  if (!pendingResult || !pendingPhotoUri) return null;
 
   const meta = POLLUTION_CLASSES[pendingResult.pollutionClass];
   const severity = getSeverity(pendingResult.pollutionClass);
