@@ -8,8 +8,7 @@ import {
   serverTimestamp,
   Unsubscribe,
 } from 'firebase/firestore';
-import { ref, uploadString, getDownloadURL } from 'firebase/storage';
-import * as FileSystem from 'expo-file-system/legacy';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from './firebase';
 import { Sighting, PollutionClass, Severity } from '../types';
 import { resolveAgency } from '../utils/routing';
@@ -17,11 +16,19 @@ import { resolveAgency } from '../utils/routing';
 const SIGHTINGS = 'sightings';
 
 export async function uploadPhoto(uri: string, userId: string): Promise<string> {
-  const base64 = await FileSystem.readAsStringAsync(uri, {
-    encoding: FileSystem.EncodingType.Base64,
+  // XHR creates a native RN Blob (not from ArrayBuffer) which Firebase can
+  // use directly via xhr.send(blob) without triggering the Hermes restriction.
+  const blob: Blob = await new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.onload = () => resolve(xhr.response);
+    xhr.onerror = () => reject(new Error('Could not read photo file'));
+    xhr.responseType = 'blob';
+    xhr.open('GET', uri);
+    xhr.send();
   });
+
   const storageRef = ref(storage, `sightings/${userId}/${Date.now()}.jpg`);
-  await uploadString(storageRef, base64, 'base64', { contentType: 'image/jpeg' });
+  await uploadBytes(storageRef, blob);
   return getDownloadURL(storageRef);
 }
 
