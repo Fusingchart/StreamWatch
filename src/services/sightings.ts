@@ -9,7 +9,7 @@ import {
   Unsubscribe,
 } from 'firebase/firestore';
 import { ref, uploadString, getDownloadURL } from 'firebase/storage';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { db, storage } from './firebase';
 import { Sighting, PollutionClass, Severity } from '../types';
 import { resolveAgency } from '../utils/routing';
