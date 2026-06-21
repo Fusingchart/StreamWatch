@@ -8,7 +8,11 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     willConnectTo session: UISceneSession,
     options connectionOptions: UIScene.ConnectionOptions
   ) {
-    // React Native / Expo manages the UIWindow in AppDelegate.
-    // This class exists solely to satisfy iOS 27's UIScene lifecycle requirement.
+    guard let windowScene = scene as? UIWindowScene,
+          let appDelegate = UIApplication.shared.delegate as? AppDelegate,
+          let appWindow = appDelegate.window else { return }
+    // Attach the window Expo/React Native created in AppDelegate to this scene.
+    appWindow.windowScene = windowScene
+    appWindow.makeKeyAndVisible()
   }
 }
