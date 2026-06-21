@@ -13,3 +13,6 @@ yarn-error.*
 *.pem
 ios/
 android/
+firebase-debug.log
+functions/lib/
+functions/node_modules/
