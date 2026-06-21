@@ -1,7 +1,7 @@
 {
   "name": "streamwatch",
   "version": "1.0.0",
-  "main": "index.ts",
+  "main": "expo-router/entry",
   "dependencies": {
     "expo": "~56.0.12",
     "expo-camera": "~56.0.8",
