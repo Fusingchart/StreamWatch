@@ -29,14 +29,11 @@ export default function ConfirmScreen() {
   const { lat, lng } = useLocalSearchParams<{ lat: string; lng: string }>();
   const [submitting, setSubmitting] = useState(false);
 
-  const { userId, pendingResult, pendingPhotoUri, addSighting, clearPending } =
-    useAppStore((s) => ({
-      userId: s.userId,
-      pendingResult: s.pendingResult,
-      pendingPhotoUri: s.pendingPhotoUri,
-      addSighting: s.addSighting,
-      clearPending: s.clearPending,
-    }));
+  const userId = useAppStore((s) => s.userId);
+  const pendingResult = useAppStore((s) => s.pendingResult);
+  const pendingPhotoUri = useAppStore((s) => s.pendingPhotoUri);
+  const addSighting = useAppStore((s) => s.addSighting);
+  const clearPending = useAppStore((s) => s.clearPending);
 
   if (!pendingResult || !pendingPhotoUri) {
     router.replace('/');
