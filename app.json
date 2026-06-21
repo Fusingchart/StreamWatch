@@ -1,15 +1,18 @@
 {
   "expo": {
     "name": "StreamWatch",
-    "slug": "StreamWatch",
+    "slug": "streamwatch",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
+    "description": "AI-powered waterway pollution detection for WA-01. Congressional App Challenge 2026.",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": false,
+      "bundleIdentifier": "com.fusingchart.streamwatch"
     },
     "android": {
+      "package": "com.fusingchart.streamwatch",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -20,6 +23,11 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": ""
+      }
     }
   }
 }
