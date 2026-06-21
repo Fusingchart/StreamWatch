@@ -2,8 +2,9 @@ import { useState } from 'react';
 import {
   View, Text, Image, TouchableOpacity,
   StyleSheet, ActivityIndicator, Alert,
-  ScrollView, StatusBar, SafeAreaView,
+  ScrollView, StatusBar,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
