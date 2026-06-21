@@ -15,6 +15,7 @@ import { uploadPhoto, submitSighting } from '../src/services/sightings';
 import { useAppStore } from '../src/store';
 import { POLLUTION_CLASSES } from '../src/constants/pollution';
 import { getSeverity } from '../src/utils/routing';
+import { getCounty } from '../src/utils/geocode';
 
 export default function ConfirmScreen() {
   const { lat, lng } = useLocalSearchParams<{ lat: string; lng: string }>();
@@ -42,15 +43,20 @@ export default function ConfirmScreen() {
     if (!userId || !pendingResult || !pendingPhotoUri) return;
     setSubmitting(true);
     try {
-      const photoUrl = await uploadPhoto(pendingPhotoUri, userId);
+      const [photoUrl, county] = await Promise.all([
+        uploadPhoto(pendingPhotoUri, userId),
+        getCounty(latitude, longitude),
+      ]);
+
+      const severity = getSeverity(pendingResult.pollutionClass);
       const id = await submitSighting({
         userId,
         pollutionClass: pendingResult.pollutionClass,
-        severity: getSeverity(pendingResult.pollutionClass),
+        severity,
         confidence: pendingResult.confidence,
         latitude,
         longitude,
-        county: 'Snohomish', // TODO: reverse-geocode from lat/lng
+        county,
         photoUrl,
       });
 
@@ -58,11 +64,11 @@ export default function ConfirmScreen() {
         id,
         userId,
         pollutionClass: pendingResult.pollutionClass,
-        severity: getSeverity(pendingResult.pollutionClass),
+        severity,
         confidence: pendingResult.confidence,
         latitude,
         longitude,
-        county: 'Snohomish',
+        county,
         photoUrl,
         reportedAt: new Date(),
         agencyEmailed: null,
