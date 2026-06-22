@@ -1,8 +1,9 @@
 import { useEffect } from 'react';
 import {
   View, Text, FlatList, StyleSheet,
-  StatusBar,
+  StatusBar, TouchableOpacity,
 } from 'react-native';
+import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
 import { subscribeSightings } from '../../src/services/sightings';
@@ -32,6 +33,7 @@ function SightingCard({ item }: { item: Sighting }) {
   const timeStr = item.reportedAt instanceof Date ? formatTime(item.reportedAt) : 'Pending…';
 
   return (
+    <TouchableOpacity onPress={() => router.push(`/sighting/${item.id}`)} activeOpacity={0.75}>
     <BlurView intensity={40} tint="dark" style={styles.card}>
       <View style={[styles.accentBar, { backgroundColor: meta.color }]} />
       <View style={[styles.iconWrap, { backgroundColor: meta.color + '22' }]}>
@@ -46,6 +48,7 @@ function SightingCard({ item }: { item: Sighting }) {
         <Text style={[styles.sevText, { color: sevColor }]}>{item.severity}</Text>
       </View>
     </BlurView>
+    </TouchableOpacity>
   );
 }
 

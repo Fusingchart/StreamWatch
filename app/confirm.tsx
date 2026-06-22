@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import {
   View, Text, Image, TouchableOpacity,
   StyleSheet, ActivityIndicator, Alert,
@@ -15,7 +15,7 @@ import { POLLUTION_CLASSES } from '../src/constants/pollution';
 import { getSeverity } from '../src/utils/routing';
 import { getCounty } from '../src/utils/geocode';
 import { colors, font, radius, space } from '../src/constants/theme';
-import { getDownstreamImpacts, POI_META, DownstreamHit } from '../src/data/downstream';
+import DownstreamCard from '../src/components/DownstreamCard';
 
 const SEV_COLOR = { HIGH: colors.high, MEDIUM: colors.warning, NONE: colors.none };
 const SEV_BG = { HIGH: colors.high + '18', MEDIUM: colors.warning + '18', NONE: colors.none + '18' };
@@ -26,49 +26,6 @@ const SEV_LABEL = {
   NONE: 'No pollution detected — no action needed',
 };
 
-function formatDist(km: number): string {
-  return km < 1 ? `${Math.round(km * 1000)} m` : `${km.toFixed(1)} km`;
-}
-
-function DownstreamCard({ hits, sevColor }: { hits: DownstreamHit[]; sevColor: string }) {
-  if (hits.length === 0) return null;
-  return (
-    <BlurView intensity={50} tint="dark" style={styles.downstreamCard}>
-      {/* Header */}
-      <View style={styles.downstreamHeader}>
-        <View style={[styles.downstreamPill, { backgroundColor: sevColor + '22', borderColor: sevColor + '55' }]}>
-          <Text style={[styles.downstreamPillText, { color: sevColor }]}>
-            {hits.length} downstream {hits.length === 1 ? 'impact' : 'impacts'}
-          </Text>
-        </View>
-        <Text style={styles.downstreamSubtitle}>within the affected watershed</Text>
-      </View>
-
-      {/* POI rows */}
-      {hits.map((hit, i) => {
-        const meta = POI_META[hit.type];
-        return (
-          <View key={hit.id}>
-            {i > 0 && <View style={styles.divider} />}
-            <View style={styles.poiRow}>
-              <Text style={styles.poiEmoji}>{meta.emoji}</Text>
-              <View style={styles.poiBody}>
-                <View style={styles.poiTitleRow}>
-                  <Text style={styles.poiName} numberOfLines={1}>{hit.name}</Text>
-                  <Text style={[styles.poiDist, { color: meta.color }]}>{formatDist(hit.distanceKm)}</Text>
-                </View>
-                <Text style={styles.poiDesc} numberOfLines={2}>{hit.description}</Text>
-                <View style={[styles.poiTypePill, { backgroundColor: meta.color + '18' }]}>
-                  <Text style={[styles.poiTypeText, { color: meta.color }]}>{meta.label}</Text>
-                </View>
-              </View>
-            </View>
-          </View>
-        );
-      })}
-    </BlurView>
-  );
-}
 
 export default function ConfirmScreen() {
   const { lat, lng } = useLocalSearchParams<{ lat: string; lng: string }>();
@@ -95,12 +52,6 @@ export default function ConfirmScreen() {
   const longitude = parseFloat(lng ?? '0');
   const confidence = Math.round(pendingResult.confidence * 100);
 
-  const downstreamHits = useMemo(
-    () => (severity !== 'NONE' && latitude !== 0)
-      ? getDownstreamImpacts(latitude, longitude)
-      : [],
-    [latitude, longitude, severity]
-  );
 
   async function handleSubmit() {
     if (!userId || !pendingResult || !pendingPhotoUri) return;
@@ -196,7 +147,9 @@ export default function ConfirmScreen() {
           </BlurView>
 
           {/* Downstream impact card — only for non-clean detections */}
-          <DownstreamCard hits={downstreamHits} sevColor={sevColor} />
+          {severity !== 'NONE' && latitude !== 0 && (
+            <DownstreamCard latitude={latitude} longitude={longitude} sevColor={sevColor} />
+          )}
 
           {/* Location */}
           {latitude !== 0 && (
@@ -282,37 +235,6 @@ const styles = StyleSheet.create({
   },
   sevIconWrap: { width: 30, height: 30, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center' },
   sevLabel: { flex: 1, fontSize: font.size.sm, fontWeight: font.weight.medium, lineHeight: 18 },
-
-  // Downstream impact card
-  downstreamCard: {
-    borderRadius: radius.md, overflow: 'hidden',
-    borderWidth: 0.5, borderColor: colors.border,
-    paddingVertical: 14,
-  },
-  downstreamHeader: { paddingHorizontal: 14, marginBottom: 12, gap: 4 },
-  downstreamPill: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: 10, paddingVertical: 4,
-    borderRadius: radius.full, borderWidth: 0.5,
-  },
-  downstreamPillText: { fontSize: 12, fontWeight: font.weight.semibold },
-  downstreamSubtitle: { fontSize: 11, color: colors.textMuted },
-
-  divider: { height: 0.5, backgroundColor: colors.border, marginHorizontal: 14 },
-
-  poiRow: { flexDirection: 'row', gap: 10, paddingHorizontal: 14, paddingVertical: 10 },
-  poiEmoji: { fontSize: 22, lineHeight: 28 },
-  poiBody: { flex: 1, gap: 4 },
-  poiTitleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
-  poiName: { flex: 1, fontSize: font.size.sm, fontWeight: font.weight.semibold, color: colors.text },
-  poiDist: { fontSize: 11, fontWeight: font.weight.bold },
-  poiDesc: { fontSize: 11, color: colors.textMuted, lineHeight: 15 },
-  poiTypePill: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: 7, paddingVertical: 2,
-    borderRadius: radius.full,
-  },
-  poiTypeText: { fontSize: 10, fontWeight: font.weight.medium },
 
   locText: { fontSize: font.size.sm, color: colors.textSecondary, flex: 1 },
 
