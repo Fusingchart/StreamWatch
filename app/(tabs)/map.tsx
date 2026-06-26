@@ -10,6 +10,14 @@ import { POLLUTION_CLASSES } from '../../src/constants/pollution';
 import { colors, font, radius, space } from '../../src/constants/theme';
 import { Sighting } from '../../src/types';
 import { computeWaterwayHealth, WaterwayHealth } from '../../src/data/waterways';
+import FilterBar, { FilterOption } from '../../src/components/FilterBar';
+
+const SEV_OPTIONS: FilterOption[] = [
+  { key: 'ALL', label: 'All', color: colors.primary },
+  { key: 'HIGH', label: 'High', color: colors.high },
+  { key: 'MEDIUM', label: 'Medium', color: colors.warning },
+  { key: 'NONE', label: 'Clean', color: colors.none },
+];
 
 const SEV_COLOR = { HIGH: colors.high, MEDIUM: colors.warning, NONE: colors.none };
 
@@ -89,11 +97,16 @@ export default function MapScreen() {
   const setSightings = useAppStore((s) => s.setSightings);
   const [selected, setSelected] = useState<Sighting | null>(null);
   const [view, setView] = useState<'sightings' | 'health'>('sightings');
+  const [sevFilter, setSevFilter] = useState('ALL');
 
   useEffect(() => {
     const unsub = subscribeSightings(setSightings);
     return unsub;
   }, []);
+
+  const visibleSightings = useMemo(() =>
+    sevFilter === 'ALL' ? sightings : sightings.filter((s) => s.severity === sevFilter),
+  [sightings, sevFilter]);
 
   const healthScores = useMemo(() => computeWaterwayHealth(sightings), [sightings]);
   const overallHealth = useMemo(() => {
@@ -137,7 +150,7 @@ export default function MapScreen() {
         showsCompass={false}
         showsScale={false}
       >
-        {sightings.map((s) => (
+        {visibleSightings.map((s) => (
           <Marker
             key={s.id}
             coordinate={{ latitude: s.latitude, longitude: s.longitude }}
@@ -191,6 +204,16 @@ export default function MapScreen() {
             </TouchableOpacity>
           </BlurView>
         </BlurView>
+
+        {/* Severity filter — Reports view only */}
+        {view === 'sightings' && (
+          <BlurView intensity={50} tint="dark" style={styles.filterWrap}>
+            <FilterBar options={SEV_OPTIONS} value={sevFilter} onChange={(k) => {
+              setSevFilter(k);
+              if (selected && k !== 'ALL' && selected.severity !== k) setSelected(null);
+            }} />
+          </BlurView>
+        )}
 
         {/* Locate me */}
         <TouchableOpacity style={styles.locateBtn} onPress={centerOnUser} activeOpacity={0.8}>
@@ -268,6 +291,11 @@ const styles = StyleSheet.create({
   toggleText: { fontSize: font.size.sm, color: colors.textMuted, fontWeight: font.weight.medium },
   toggleTextActive: { color: '#fff' },
 
+  filterWrap: {
+    marginHorizontal: space.md, marginTop: 8,
+    borderRadius: radius.md, overflow: 'hidden',
+    borderWidth: 0.5, borderColor: colors.border,
+  },
   locateBtn: { position: 'absolute', right: space.md + 4, top: 72 },
   locateBtnInner: {
     width: 42, height: 42, borderRadius: radius.md,
