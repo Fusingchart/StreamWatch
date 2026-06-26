@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import {
   View, Text, FlatList, StyleSheet,
   StatusBar, TouchableOpacity,
@@ -12,12 +12,29 @@ import { POLLUTION_CLASSES } from '../../src/constants/pollution';
 import { colors, font, radius, space } from '../../src/constants/theme';
 import { Sighting } from '../../src/types';
 import { Droplets } from 'lucide-react-native';
+import FilterBar, { FilterOption } from '../../src/components/FilterBar';
 
 const SEV_COLOR: Record<string, string> = {
   HIGH: colors.high,
   MEDIUM: colors.warning,
   NONE: colors.none,
 };
+
+const SEV_OPTIONS: FilterOption[] = [
+  { key: 'ALL', label: 'All', color: colors.primary },
+  { key: 'HIGH', label: 'High', color: colors.high },
+  { key: 'MEDIUM', label: 'Medium', color: colors.warning },
+  { key: 'NONE', label: 'Clean', color: colors.none },
+];
+
+const CLASS_OPTIONS: FilterOption[] = [
+  { key: 'ALL', label: 'All types', color: colors.primary },
+  ...Object.entries(POLLUTION_CLASSES).map(([key, meta]) => ({
+    key,
+    label: meta.label,
+    color: meta.color,
+  })),
+];
 
 function formatTime(date: Date): string {
   const diff = Math.floor((Date.now() - date.getTime()) / 1000);
@@ -55,11 +72,21 @@ function SightingCard({ item }: { item: Sighting }) {
 export default function HistoryScreen() {
   const sightings = useAppStore((s) => s.sightings);
   const setSightings = useAppStore((s) => s.setSightings);
+  const [sevFilter, setSevFilter] = useState('ALL');
+  const [classFilter, setClassFilter] = useState('ALL');
 
   useEffect(() => {
     const unsub = subscribeSightings(setSightings);
     return unsub;
   }, []);
+
+  const filtered = useMemo(() => sightings.filter((s) => {
+    if (sevFilter !== 'ALL' && s.severity !== sevFilter) return false;
+    if (classFilter !== 'ALL' && s.pollutionClass !== classFilter) return false;
+    return true;
+  }), [sightings, sevFilter, classFilter]);
+
+  const activeFilters = (sevFilter !== 'ALL' ? 1 : 0) + (classFilter !== 'ALL' ? 1 : 0);
 
   return (
     <View style={styles.container}>
@@ -67,15 +94,30 @@ export default function HistoryScreen() {
       <SafeAreaView style={{ flex: 1 }}>
         <View style={styles.header}>
           <Text style={styles.heading}>Sightings</Text>
-          {sightings.length > 0 && (
-            <BlurView intensity={40} tint="dark" style={styles.countPill}>
-              <Text style={styles.countText}>{sightings.length}</Text>
-            </BlurView>
-          )}
+          <View style={styles.headerRight}>
+            {activeFilters > 0 && (
+              <TouchableOpacity
+                onPress={() => { setSevFilter('ALL'); setClassFilter('ALL'); }}
+                style={styles.clearBtn}
+              >
+                <Text style={styles.clearText}>Clear</Text>
+              </TouchableOpacity>
+            )}
+            {sightings.length > 0 && (
+              <BlurView intensity={40} tint="dark" style={styles.countPill}>
+                <Text style={styles.countText}>
+                  {filtered.length}{filtered.length !== sightings.length ? `/${sightings.length}` : ''}
+                </Text>
+              </BlurView>
+            )}
+          </View>
         </View>
 
+        <FilterBar options={SEV_OPTIONS} value={sevFilter} onChange={setSevFilter} />
+        <FilterBar options={CLASS_OPTIONS} value={classFilter} onChange={setClassFilter} />
+
         <FlatList
-          data={sightings}
+          data={filtered}
           keyExtractor={(s) => s.id}
           renderItem={({ item }) => <SightingCard item={item} />}
           contentContainerStyle={styles.list}
@@ -83,9 +125,13 @@ export default function HistoryScreen() {
           ListEmptyComponent={
             <View style={styles.empty}>
               <Droplets size={52} color={colors.textMuted} strokeWidth={1.2} />
-              <Text style={styles.emptyTitle}>No sightings yet</Text>
+              <Text style={styles.emptyTitle}>
+                {activeFilters > 0 ? 'No matches' : 'No sightings yet'}
+              </Text>
               <Text style={styles.emptyBody}>
-                Go to Report and take a photo of any waterway to submit the first sighting.
+                {activeFilters > 0
+                  ? 'Try adjusting the filters above.'
+                  : 'Go to Report and take a photo of any waterway to submit the first sighting.'}
               </Text>
             </View>
           }
@@ -98,10 +144,13 @@ export default function HistoryScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   header: {
-    flexDirection: 'row', alignItems: 'center', gap: space.sm,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: space.md, paddingTop: space.md, paddingBottom: space.sm,
   },
   heading: { fontSize: font.size.xxxl, fontWeight: font.weight.bold, color: colors.text },
+  headerRight: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  clearBtn: { paddingHorizontal: 10, paddingVertical: 4 },
+  clearText: { fontSize: font.size.sm, color: colors.primary, fontWeight: font.weight.medium },
   countPill: {
     paddingHorizontal: 10, paddingVertical: 4,
     borderRadius: radius.full, overflow: 'hidden',
