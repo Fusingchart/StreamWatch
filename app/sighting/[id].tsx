@@ -1,7 +1,7 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   View, Text, Image, ScrollView, TouchableOpacity,
-  StyleSheet, StatusBar,
+  StyleSheet, StatusBar, Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
@@ -14,10 +14,11 @@ import { POLLUTION_CLASSES } from '../../src/constants/pollution';
 import { getSeverity } from '../../src/utils/routing';
 import { assignWaterway } from '../../src/data/waterways';
 import DownstreamCard from '../../src/components/DownstreamCard';
+import { markResolved } from '../../src/services/sightings';
 import { colors, font, radius, space } from '../../src/constants/theme';
 
-const SEV_COLOR = { HIGH: colors.high, MEDIUM: colors.warning, NONE: colors.none };
-const SEV_BG    = { HIGH: colors.high + '18', MEDIUM: colors.warning + '18', NONE: colors.none + '18' };
+const SEV_COLOR  = { HIGH: colors.high, MEDIUM: colors.warning, NONE: colors.none };
+const SEV_BG     = { HIGH: colors.high + '18', MEDIUM: colors.warning + '18', NONE: colors.none + '18' };
 const SEV_BORDER = { HIGH: colors.high + '44', MEDIUM: colors.warning + '44', NONE: colors.none + '44' };
 
 function formatDate(date: Date): string {
@@ -30,6 +31,7 @@ function formatDate(date: Date): string {
 export default function SightingDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const sighting = useAppStore((s) => s.sightings.find((x) => x.id === id));
+  const [resolving, setResolving] = useState(false);
 
   useEffect(() => {
     if (!sighting) router.back();
@@ -50,6 +52,32 @@ export default function SightingDetail() {
 
   if (!sighting || !meta || !mapRegion) return null;
 
+  const isResolved = sighting.resolved;
+
+  async function handleMarkResolved() {
+    Alert.alert(
+      'Mark as resolved?',
+      'This will update the report for everyone in the community.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Mark Resolved',
+          style: 'default',
+          onPress: async () => {
+            setResolving(true);
+            try {
+              await markResolved(sighting!.id);
+            } catch {
+              Alert.alert('Error', 'Could not update the report. Try again.');
+            } finally {
+              setResolving(false);
+            }
+          },
+        },
+      ]
+    );
+  }
+
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" />
@@ -61,6 +89,17 @@ export default function SightingDetail() {
           colors={['rgba(0,0,0,0.15)', 'rgba(0,0,0,0.0)', 'rgba(0,0,0,0.85)']}
           style={StyleSheet.absoluteFill}
         />
+        {isResolved && (
+          <View style={styles.resolvedOverlay}>
+            <BlurView intensity={60} tint="dark" style={styles.resolvedBanner}>
+              <CheckCircle size={14} color={colors.none} strokeWidth={2.5} />
+              <Text style={styles.resolvedBannerText}>
+                Resolved by {sighting.resolvedBy === 'agency' ? 'agency' : 'community'}
+                {sighting.resolvedAt ? `  ·  ${formatDate(new Date(sighting.resolvedAt))}` : ''}
+              </Text>
+            </BlurView>
+          </View>
+        )}
       </View>
 
       {/* Floating nav */}
@@ -78,32 +117,43 @@ export default function SightingDetail() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Spacer so content starts below the hero */}
         <View style={styles.heroSpacer} />
 
         {/* Classification */}
-        <BlurView intensity={55} tint="dark" style={styles.card}>
-          <View style={[styles.classDot, { backgroundColor: meta.color }]} />
+        <BlurView intensity={55} tint="dark" style={[styles.card, isResolved && styles.cardMuted]}>
+          <View style={[styles.classDot, { backgroundColor: isResolved ? colors.textMuted : meta.color }]} />
           <View style={styles.classBody}>
-            <Text style={styles.className}>{meta.label}</Text>
+            <Text style={[styles.className, isResolved && styles.textMuted]}>{meta.label}</Text>
             <View style={styles.confRow}>
               <View style={styles.confTrack}>
-                <View style={[styles.confFill, { width: `${confidence}%` as any, backgroundColor: meta.color }]} />
+                <View style={[styles.confFill, {
+                  width: `${confidence}%` as any,
+                  backgroundColor: isResolved ? colors.textMuted : meta.color,
+                }]} />
               </View>
-              <Text style={[styles.confPct, { color: meta.color }]}>{confidence}%</Text>
+              <Text style={[styles.confPct, { color: isResolved ? colors.textMuted : meta.color }]}>
+                {confidence}%
+              </Text>
             </View>
           </View>
         </BlurView>
 
         {/* Severity */}
-        <BlurView intensity={55} tint="dark" style={[styles.card, { borderColor: SEV_BORDER[severity] }]}>
-          <View style={[styles.sevIcon, { backgroundColor: SEV_BG[severity] }]}>
-            {severity === 'NONE'
-              ? <CheckCircle size={15} color={sevColor} strokeWidth={2} />
-              : <AlertTriangle size={15} color={sevColor} strokeWidth={2} />}
+        <BlurView
+          intensity={55} tint="dark"
+          style={[styles.card, { borderColor: isResolved ? colors.border : SEV_BORDER[severity] }]}
+        >
+          <View style={[styles.sevIcon, { backgroundColor: isResolved ? colors.border + '44' : SEV_BG[severity] }]}>
+            {isResolved
+              ? <CheckCircle size={15} color={colors.none} strokeWidth={2} />
+              : severity === 'NONE'
+                ? <CheckCircle size={15} color={sevColor} strokeWidth={2} />
+                : <AlertTriangle size={15} color={sevColor} strokeWidth={2} />}
           </View>
           <View style={styles.sevBody}>
-            <Text style={[styles.sevTitle, { color: sevColor }]}>{severity} severity</Text>
+            <Text style={[styles.sevTitle, { color: isResolved ? colors.none : sevColor }]}>
+              {isResolved ? 'Resolved' : `${severity} severity`}
+            </Text>
             {waterway && (
               <Text style={styles.sevSub}>
                 <Droplets size={11} color={colors.textMuted} /> {waterway.name}
@@ -112,8 +162,8 @@ export default function SightingDetail() {
           </View>
         </BlurView>
 
-        {/* Downstream impacts */}
-        {severity !== 'NONE' && (
+        {/* Downstream impacts — hide once resolved */}
+        {severity !== 'NONE' && !isResolved && (
           <DownstreamCard
             latitude={sighting.latitude}
             longitude={sighting.longitude}
@@ -136,12 +186,11 @@ export default function SightingDetail() {
             showsCompass={false}
           >
             <Marker coordinate={{ latitude: sighting.latitude, longitude: sighting.longitude }}>
-              <View style={[styles.pin, { borderColor: sevColor }]}>
-                <View style={[styles.pinDot, { backgroundColor: sevColor }]} />
+              <View style={[styles.pin, { borderColor: isResolved ? colors.textMuted : sevColor }]}>
+                <View style={[styles.pinDot, { backgroundColor: isResolved ? colors.textMuted : sevColor }]} />
               </View>
             </Marker>
           </MapView>
-          {/* Coords overlay */}
           <BlurView intensity={50} tint="dark" style={styles.coordsChip}>
             <MapPin size={11} color={colors.textSecondary} strokeWidth={2} />
             <Text style={styles.coordsText}>
@@ -170,6 +219,21 @@ export default function SightingDetail() {
             </>
           )}
         </BlurView>
+
+        {/* Resolve button */}
+        {!isResolved && (
+          <TouchableOpacity
+            onPress={handleMarkResolved}
+            disabled={resolving}
+            activeOpacity={0.75}
+            style={styles.resolveBtn}
+          >
+            <CheckCircle size={16} color={colors.none} strokeWidth={2} />
+            <Text style={styles.resolveBtnText}>
+              {resolving ? 'Updating...' : 'Mark as Resolved'}
+            </Text>
+          </TouchableOpacity>
+        )}
       </ScrollView>
     </View>
   );
@@ -193,6 +257,19 @@ const styles = StyleSheet.create({
     position: 'absolute', top: 0, left: 0, right: 0,
     height: HERO_H,
   },
+  resolvedOverlay: {
+    position: 'absolute', bottom: 12, left: 12, right: 12,
+    alignItems: 'center',
+  },
+  resolvedBanner: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    paddingHorizontal: 14, paddingVertical: 7,
+    borderRadius: radius.full, overflow: 'hidden',
+    borderWidth: 0.5, borderColor: colors.none + '44',
+  },
+  resolvedBannerText: {
+    fontSize: 12, fontWeight: font.weight.semibold, color: colors.none,
+  },
 
   navWrap: {
     position: 'absolute', top: 0, left: 0, right: 0,
@@ -214,6 +291,8 @@ const styles = StyleSheet.create({
     padding: 14, borderRadius: radius.md,
     overflow: 'hidden', borderWidth: 0.5, borderColor: colors.border,
   },
+  cardMuted: { opacity: 0.6 },
+  textMuted: { color: colors.textMuted },
   classDot: { width: 14, height: 14, borderRadius: 7, flexShrink: 0 },
   classBody: { flex: 1 },
   className: { fontSize: font.size.xl, fontWeight: font.weight.bold, color: colors.text, marginBottom: 8 },
@@ -255,4 +334,12 @@ const styles = StyleSheet.create({
   detailLabel: { fontSize: font.size.sm, color: colors.textMuted },
   detailValue: { fontSize: font.size.sm, color: colors.text, fontWeight: font.weight.medium, maxWidth: '60%' },
   agencyRow: { flexDirection: 'row', alignItems: 'center', gap: 5, maxWidth: '60%' },
+
+  resolveBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    paddingVertical: 14, borderRadius: radius.md,
+    borderWidth: 1, borderColor: colors.none + '55',
+    backgroundColor: colors.none + '12',
+  },
+  resolveBtnText: { fontSize: font.size.md, fontWeight: font.weight.semibold, color: colors.none },
 });

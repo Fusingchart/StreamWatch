@@ -1,6 +1,8 @@
 import {
   collection,
   addDoc,
+  doc,
+  updateDoc,
   query,
   where,
   orderBy,
@@ -14,6 +16,10 @@ import { Sighting, PollutionClass, Severity } from '../types';
 import { resolveAgency } from '../utils/routing';
 
 const SIGHTINGS = 'sightings';
+
+function makeToken(): string {
+  return Math.random().toString(36).slice(2) + Date.now().toString(36);
+}
 
 export async function uploadPhoto(uri: string, userId: string): Promise<string> {
   // XHR creates a native RN Blob (not from ArrayBuffer) which Firebase can
@@ -48,14 +54,26 @@ export async function submitSighting(params: {
     params.confidence
   );
 
-  const doc = await addDoc(collection(db, SIGHTINGS), {
+  const docRef = await addDoc(collection(db, SIGHTINGS), {
     ...params,
     agencyEmailed,
     hidden: false,
+    resolved: false,
+    resolvedAt: null,
+    resolvedBy: null,
+    resolveToken: makeToken(),
     reportedAt: serverTimestamp(),
   });
 
-  return doc.id;
+  return docRef.id;
+}
+
+export async function markResolved(sightingId: string): Promise<void> {
+  await updateDoc(doc(db, SIGHTINGS, sightingId), {
+    resolved: true,
+    resolvedAt: serverTimestamp(),
+    resolvedBy: 'community',
+  });
 }
 
 export function subscribeSightings(
@@ -68,11 +86,18 @@ export function subscribeSightings(
   );
 
   return onSnapshot(q, (snap) => {
-    const sightings: Sighting[] = snap.docs.map((d) => ({
-      id: d.id,
-      ...(d.data() as Omit<Sighting, 'id'>),
-      reportedAt: d.data().reportedAt?.toDate() ?? new Date(),
-    }));
+    const sightings: Sighting[] = snap.docs.map((d) => {
+      const data = d.data();
+      return {
+        id: d.id,
+        ...(data as Omit<Sighting, 'id'>),
+        reportedAt: data.reportedAt?.toDate() ?? new Date(),
+        resolvedAt: data.resolvedAt?.toDate() ?? null,
+        resolved: data.resolved ?? false,
+        resolvedBy: data.resolvedBy ?? null,
+        resolveToken: data.resolveToken ?? '',
+      };
+    });
     onUpdate(sightings);
   });
 }
