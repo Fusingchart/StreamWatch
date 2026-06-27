@@ -6,6 +6,11 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "cover",
+      "backgroundColor": "#000810"
+    },
     "userInterfaceStyle": "automatic",
     "description": "AI-powered waterway pollution detection for WA-01. Congressional App Challenge 2026.",
     "ios": {
