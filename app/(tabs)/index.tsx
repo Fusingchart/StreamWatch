@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import {
   View,
   Text,
@@ -16,13 +16,55 @@ import { router } from 'expo-router';
 import { Zap, Droplets } from 'lucide-react-native';
 import { classifyImage } from '../../src/services/roboflow';
 import { useAppStore } from '../../src/store';
+import { POLLUTION_CLASSES } from '../../src/constants/pollution';
+import { computeWaterwayHealth } from '../../src/data/waterways';
 import { colors, font, radius, space } from '../../src/constants/theme';
+
+function useStats() {
+  const sightings = useAppStore((s) => s.sightings);
+
+  return useMemo(() => {
+    const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    const thisWeek = sightings.filter(
+      (s) => s.reportedAt instanceof Date && s.reportedAt.getTime() > weekAgo
+    );
+
+    // Most common pollution class this week (excluding clean_water)
+    const counts: Record<string, number> = {};
+    for (const s of thisWeek) {
+      if (s.pollutionClass !== 'clean_water') {
+        counts[s.pollutionClass] = (counts[s.pollutionClass] ?? 0) + 1;
+      }
+    }
+    const topClass = Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0];
+    const topLabel = topClass ? POLLUTION_CLASSES[topClass as keyof typeof POLLUTION_CLASSES]?.label : null;
+
+    // Overall watershed health
+    const healthScores = computeWaterwayHealth(sightings);
+    const avgHealth = healthScores.length > 0
+      ? Math.round(healthScores.reduce((s, h) => s + h.score, 0) / healthScores.length)
+      : null;
+
+    const healthColor = avgHealth === null ? colors.textMuted
+      : avgHealth >= 80 ? colors.none
+      : avgHealth >= 55 ? colors.warning
+      : colors.high;
+
+    return {
+      weekCount: thisWeek.length,
+      topLabel,
+      avgHealth,
+      healthColor,
+    };
+  }, [sightings]);
+}
 
 export default function CameraScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const [busy, setBusy] = useState(false);
   const cameraRef = useRef<CameraView>(null);
   const setPendingResult = useAppStore((s) => s.setPendingResult);
+  const stats = useStats();
 
   if (!permission) return <View style={styles.container} />;
 
@@ -80,7 +122,7 @@ export default function CameraScreen() {
 
       {/* Top gradient + header */}
       <LinearGradient
-        colors={['rgba(0,0,0,0.6)', 'transparent']}
+        colors={['rgba(0,0,0,0.72)', 'rgba(0,0,0,0.0)']}
         style={styles.topGradient}
       >
         <View style={styles.header}>
@@ -88,6 +130,28 @@ export default function CameraScreen() {
           <Text style={styles.headerTitle}>StreamWatch</Text>
         </View>
         <Text style={styles.headerSub}>Point camera at any waterway</Text>
+
+        {/* Stats card */}
+        <BlurView intensity={40} tint="dark" style={styles.statsCard}>
+          <View style={styles.statItem}>
+            <Text style={styles.statValue}>{stats.weekCount}</Text>
+            <Text style={styles.statLabel}>reports this week</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Text style={[styles.statValue, { color: stats.healthColor }]}>
+              {stats.avgHealth ?? '—'}
+            </Text>
+            <Text style={styles.statLabel}>watershed health</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Text style={styles.statValue} numberOfLines={1}>
+              {stats.topLabel ?? 'None'}
+            </Text>
+            <Text style={styles.statLabel}>most common</Text>
+          </View>
+        </BlurView>
       </LinearGradient>
 
       {/* Viewfinder */}
@@ -158,11 +222,35 @@ const styles = StyleSheet.create({
   // Top
   topGradient: {
     position: 'absolute', top: 0, left: 0, right: 0,
-    paddingTop: 60, paddingHorizontal: space.lg, paddingBottom: 40,
+    paddingTop: 60, paddingHorizontal: space.lg, paddingBottom: 24,
   },
   header: { flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 4 },
   headerTitle: { color: '#fff', fontSize: font.size.lg, fontWeight: font.weight.bold },
-  headerSub: { color: 'rgba(255,255,255,0.55)', fontSize: font.size.sm },
+  headerSub: { color: 'rgba(255,255,255,0.55)', fontSize: font.size.sm, marginBottom: 14 },
+
+  statsCard: {
+    flexDirection: 'row',
+    borderRadius: radius.md,
+    overflow: 'hidden',
+    borderWidth: 0.5,
+    borderColor: 'rgba(255,255,255,0.12)',
+  },
+  statItem: {
+    flex: 1, paddingVertical: 10, paddingHorizontal: 8,
+    alignItems: 'center', gap: 2,
+  },
+  statValue: {
+    fontSize: 15, fontWeight: font.weight.bold,
+    color: '#fff', textAlign: 'center',
+  },
+  statLabel: {
+    fontSize: 10, color: 'rgba(255,255,255,0.45)',
+    textAlign: 'center', lineHeight: 13,
+  },
+  statDivider: {
+    width: 0.5, marginVertical: 10,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+  },
 
   // Viewfinder
   vfWrapper: {
