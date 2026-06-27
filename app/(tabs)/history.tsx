@@ -46,24 +46,30 @@ function formatTime(date: Date): string {
 
 function SightingCard({ item }: { item: Sighting }) {
   const meta = POLLUTION_CLASSES[item.pollutionClass];
-  const sevColor = SEV_COLOR[item.severity];
+  const sevColor = item.resolved ? colors.textMuted : SEV_COLOR[item.severity];
   const timeStr = item.reportedAt instanceof Date ? formatTime(item.reportedAt) : 'Pending…';
 
   return (
     <TouchableOpacity onPress={() => router.push(`/sighting/${item.id}`)} activeOpacity={0.75}>
-    <BlurView intensity={40} tint="dark" style={styles.card}>
-      <View style={[styles.accentBar, { backgroundColor: meta.color }]} />
-      <View style={[styles.iconWrap, { backgroundColor: meta.color + '22' }]}>
-        <View style={[styles.iconDot, { backgroundColor: meta.color }]} />
+    <BlurView intensity={40} tint="dark" style={[styles.card, item.resolved && styles.cardResolved]}>
+      <View style={[styles.accentBar, { backgroundColor: item.resolved ? colors.textMuted : meta.color }]} />
+      <View style={[styles.iconWrap, { backgroundColor: (item.resolved ? colors.textMuted : meta.color) + '22' }]}>
+        <View style={[styles.iconDot, { backgroundColor: item.resolved ? colors.textMuted : meta.color }]} />
       </View>
       <View style={styles.cardBody}>
-        <Text style={styles.cardClass}>{meta.label}</Text>
+        <Text style={[styles.cardClass, item.resolved && styles.textMuted]}>{meta.label}</Text>
         <Text style={styles.cardMeta}>{item.county || 'Unknown'} · {Math.round(item.confidence * 100)}%</Text>
         <Text style={styles.cardTime}>{timeStr}</Text>
       </View>
-      <View style={[styles.sevBadge, { borderColor: sevColor + '55', backgroundColor: sevColor + '18' }]}>
-        <Text style={[styles.sevText, { color: sevColor }]}>{item.severity}</Text>
-      </View>
+      {item.resolved ? (
+        <View style={styles.resolvedBadge}>
+          <Text style={styles.resolvedBadgeText}>Resolved</Text>
+        </View>
+      ) : (
+        <View style={[styles.sevBadge, { borderColor: sevColor + '55', backgroundColor: sevColor + '18' }]}>
+          <Text style={[styles.sevText, { color: sevColor }]}>{item.severity}</Text>
+        </View>
+      )}
     </BlurView>
     </TouchableOpacity>
   );
@@ -176,11 +182,19 @@ const styles = StyleSheet.create({
   cardClass: { fontSize: font.size.md, fontWeight: font.weight.semibold, color: colors.text },
   cardMeta: { fontSize: font.size.sm, color: colors.textSecondary, marginTop: 2 },
   cardTime: { fontSize: font.size.xs, color: colors.textMuted, marginTop: 3 },
+  cardResolved: { opacity: 0.6 },
+  textMuted: { color: colors.textMuted },
   sevBadge: {
     paddingHorizontal: 8, paddingVertical: 4, borderRadius: radius.full,
     borderWidth: 0.5, marginRight: 12,
   },
   sevText: { fontSize: font.size.xs, fontWeight: font.weight.bold, letterSpacing: 0.4 },
+  resolvedBadge: {
+    paddingHorizontal: 8, paddingVertical: 4, borderRadius: radius.full,
+    borderWidth: 0.5, marginRight: 12,
+    borderColor: colors.none + '55', backgroundColor: colors.none + '12',
+  },
+  resolvedBadgeText: { fontSize: font.size.xs, fontWeight: font.weight.bold, color: colors.none, letterSpacing: 0.4 },
 
   empty: { alignItems: 'center', paddingTop: 80, paddingHorizontal: 44 },
   emptyTitle: {

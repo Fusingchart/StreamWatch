@@ -21,6 +21,10 @@ export interface Sighting {
   reportedAt: Date;
   agencyEmailed: string | null;
   hidden: boolean;
+  resolved: boolean;
+  resolvedAt: Date | null;
+  resolvedBy: 'community' | 'agency' | null;
+  resolveToken: string;
 }
 
 export interface ClassificationResult {

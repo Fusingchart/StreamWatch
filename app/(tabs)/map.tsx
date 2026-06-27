@@ -150,19 +150,22 @@ export default function MapScreen() {
         showsCompass={false}
         showsScale={false}
       >
-        {visibleSightings.map((s) => (
+        {visibleSightings.map((s) => {
+          const pinColor = s.resolved ? colors.textMuted : SEV_COLOR[s.severity];
+          return (
           <Marker
             key={s.id}
             coordinate={{ latitude: s.latitude, longitude: s.longitude }}
             onPress={() => { setSelected(s); setView('sightings'); }}
           >
-            <View style={[styles.pin, { borderColor: SEV_COLOR[s.severity] }]}>
-              <View style={[styles.pinDot, { backgroundColor: SEV_COLOR[s.severity] }]} />
+            <View style={[styles.pin, { borderColor: pinColor, opacity: s.resolved ? 0.5 : 1 }]}>
+              <View style={[styles.pinDot, { backgroundColor: pinColor }]} />
             </View>
             <Callout tooltip>
               <View style={styles.callout}>
                 <Text style={styles.calloutClass}>
                   {POLLUTION_CLASSES[s.pollutionClass]?.label ?? s.pollutionClass}
+                  {s.resolved ? '  ✓' : ''}
                 </Text>
                 <Text style={styles.calloutSub}>
                   {s.county} · {Math.round(s.confidence * 100)}% confidence
@@ -170,7 +173,8 @@ export default function MapScreen() {
               </View>
             </Callout>
           </Marker>
-        ))}
+          );
+        })}
       </MapView>
 
       {/* Header */}
