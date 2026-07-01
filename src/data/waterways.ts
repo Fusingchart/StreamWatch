@@ -109,13 +109,13 @@ export function assignWaterway(lat: number, lng: number): Waterway | null {
 const SEV_PENALTY = { HIGH: 15, MEDIUM: 8, NONE: -2 } as const;
 
 function scoreWindow(sightings: Sighting[], nowMs: number, windowDays: number): number {
-  const cutoff = nowMs - windowDays * 86_400_000;
+  const windowMs = windowDays * 86_400_000;
   let score = 100;
   for (const s of sightings) {
     const age = nowMs - new Date(s.reportedAt).getTime();
-    if (age > windowDays * 86_400_000) continue;
+    if (age > windowMs) continue;
     // Exponential decay: full weight at age=0, half weight at windowDays/2
-    const decay = Math.exp(-age / (cutoff * 0.5));
+    const decay = Math.exp(-age / (windowMs * 0.5));
     const penalty = SEV_PENALTY[s.severity] * decay;
     score -= penalty;
   }
