@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import { Camera, Map, List } from 'lucide-react-native';
+import { Camera, Map, List, Waves } from 'lucide-react-native';
 import { colors } from '../../src/constants/theme';
 import { Platform } from 'react-native';
 import { BlurView } from 'expo-blur';
@@ -51,6 +51,13 @@ export default function TabLayout() {
         options={{
           title: 'Map',
           tabBarIcon: ({ color, size }) => <Map color={color} size={size - 2} strokeWidth={1.8} />,
+        }}
+      />
+      <Tabs.Screen
+        name="safety"
+        options={{
+          title: 'Safety',
+          tabBarIcon: ({ color, size }) => <Waves color={color} size={size - 2} strokeWidth={1.8} />,
         }}
       />
       <Tabs.Screen
