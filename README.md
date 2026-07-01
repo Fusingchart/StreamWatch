@@ -1,8 +1,14 @@
 # StreamWatch
 
-**AI-powered waterway pollution detection for Washington's 1st Congressional District.**
+**Turns citizen pollution reports into real-time water safety information for Washington's 1st Congressional District.**
 
-StreamWatch is an iOS app built for the [Congressional App Challenge 2026](https://www.congressionalappchallenge.us/). It lets anyone photograph a waterway, instantly classifies the pollution type using a YOLOv8 model, automatically alerts the relevant environmental agency, and shows community-sourced waterway health scores in real time.
+StreamWatch is an iOS app built for the [Congressional App Challenge 2026](https://www.congressionalappchallenge.us/). It closes the loop between spotting pollution and knowing whether it's safe to swim:
+
+**Report → Resolve → Protect**
+
+1. **Report** — anyone photographs a waterway; a YOLOv8 model instantly classifies the pollution type and the report is automatically routed to the right environmental agency.
+2. **Resolve** — the community or the notified agency (via a one-click email link) marks the issue cleared once it's cleaned up, so the map always reflects current conditions, not stale reports.
+3. **Protect** — that live report data is combined with official EPA and King County water-quality monitoring to tell nearby residents, in real time, whether a beach is safe to swim at.
 
 ---
 
@@ -10,10 +16,12 @@ StreamWatch is an iOS app built for the [Congressional App Challenge 2026](https
 
 - **AI Classification** — YOLOv8 model (via Roboflow) identifies oil sheen, foam/suds, algal bloom, discoloration, solid debris, or clean water from a photo
 - **Auto Agency Routing** — high-severity reports are emailed to the correct county or state agency automatically
+- **Resolution Tracking** — reports can be marked resolved by the community or by the agency itself via a secure email link, keeping the map and safety data current
+- **Swim Safety** — combines official water quality data (EPA BEACON, King County) with nearby unresolved StreamWatch reports to rate WA-01 beaches Safe / Caution / Avoid
 - **Downstream Impact Cards** — every report shows which beaches, salmon habitat, shellfish beds, and drinking water intakes are at risk downstream
 - **Waterway Health Scores** — live 0–100 scores with trend tracking across 8 WA-01 waterways
 - **Community Map** — real-time map of all sightings with severity markers
-- **Sighting History** — full detail view with hero photo, mini map, and agency notification status
+- **Sighting History** — full detail view with hero photo, mini map, resolution status, and agency notification status
 - **Anonymous by default** — Firebase anonymous auth, no account required
 
 ## Tech Stack
@@ -34,23 +42,24 @@ StreamWatch is an iOS app built for the [Congressional App Challenge 2026](https
 ```
 app/
 ├── (tabs)/
-│   ├── index.tsx        # Camera + classify
-│   ├── history.tsx      # Sighting list
-│   └── map.tsx          # Community map + waterway health
+│   ├── index.tsx        # Camera + classify + stats
+│   ├── map.tsx           # Community map + waterway health
+│   ├── safety.tsx        # Swim Safety (EPA/King County + reports)
+│   └── history.tsx       # Sighting list
 ├── confirm.tsx          # Review & submit report
 ├── onboarding.tsx       # First-launch onboarding
-└── sighting/[id].tsx    # Sighting detail
+└── sighting/[id].tsx    # Sighting detail + mark resolved
 
 src/
 ├── components/          # Shared UI (DownstreamCard)
 ├── constants/           # Theme, pollution class definitions
-├── data/                # Downstream POIs, waterway definitions
-├── services/            # Firebase, Roboflow, sightings API
+├── data/                # Downstream POIs, waterway definitions, beach spots
+├── services/            # Firebase, Roboflow, sightings API, beach safety
 ├── store/               # Zustand app state
 ├── types/               # TypeScript interfaces
 └── utils/               # Geocoding, agency routing
 
-functions/               # Firebase Cloud Functions (email alerts)
+functions/               # Firebase Cloud Functions (email alerts + resolve endpoint)
 ```
 
 ## Getting Started
@@ -132,6 +141,16 @@ firebase deploy --only functions
 ## WA-01 Waterways Monitored
 
 Snohomish River · Stillaguamish River · Pilchuck River · Wallace River · Sultan River · Skykomish River · Sammamish River · Lake Stevens
+
+## Swim Safety Data Sources
+
+| Water type | Source | Signal used |
+|---|---|---|
+| Saltwater beaches (Puget Sound) | EPA BEACON | Advisory/closure status |
+| Freshwater beaches (King County lakes) | King County Environmental Health | 30-day bacteria geometric mean vs. WA DOH action threshold (126 CFU/100mL) |
+| All beaches | StreamWatch reports | Unresolved, non-clean reports within 3 km in the last 7 days escalate the rating |
+
+Official data and community reports are combined into a single Safe / Caution / Avoid rating per beach.
 
 ## Contributing
 
