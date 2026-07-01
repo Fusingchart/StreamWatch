@@ -14,7 +14,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as Location from 'expo-location';
 import { router } from 'expo-router';
 import { Zap, Droplets } from 'lucide-react-native';
-import { classifyImage } from '../../src/services/roboflow';
+import { classifyImage } from '../../src/services/gemini';
 import { useAppStore } from '../../src/store';
 import { POLLUTION_CLASSES } from '../../src/constants/pollution';
 import { computeWaterwayHealth } from '../../src/data/waterways';
