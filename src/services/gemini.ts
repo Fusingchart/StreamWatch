@@ -1,4 +1,4 @@
-import * as FileSystem from 'expo-file-system';
+import { File } from 'expo-file-system';
 import { ClassificationResult, PollutionClass } from '../types';
 
 const API_KEY = process.env.EXPO_PUBLIC_GEMINI_API_KEY;
@@ -42,7 +42,7 @@ export async function classifyImage(photoUri: string): Promise<ClassificationRes
     return mockClassify();
   }
 
-  const base64 = await FileSystem.readAsStringAsync(photoUri, { encoding: 'base64' });
+  const base64 = await new File(photoUri).base64();
 
   const res = await fetch(`${BASE_URL}?key=${API_KEY}`, {
     method: 'POST',
