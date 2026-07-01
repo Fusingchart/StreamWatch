@@ -17,10 +17,6 @@ import { resolveAgency } from '../utils/routing';
 
 const SIGHTINGS = 'sightings';
 
-function makeToken(): string {
-  return Math.random().toString(36).slice(2) + Date.now().toString(36);
-}
-
 export async function uploadPhoto(uri: string, userId: string): Promise<string> {
   // XHR creates a native RN Blob (not from ArrayBuffer) which Firebase can
   // use directly via xhr.send(blob) without triggering the Hermes restriction.
@@ -61,7 +57,9 @@ export async function submitSighting(params: {
     resolved: false,
     resolvedAt: null,
     resolvedBy: null,
-    resolveToken: makeToken(),
+    // Overwritten server-side with a cryptographically random value by the
+    // onSightingCreated Cloud Function before any email is sent.
+    resolveToken: '',
     reportedAt: serverTimestamp(),
   });
 

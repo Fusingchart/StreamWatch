@@ -1,3 +1,4 @@
+import { randomBytes } from 'crypto';
 import * as admin from 'firebase-admin';
 import { onDocumentCreated } from 'firebase-functions/v2/firestore';
 import { onRequest } from 'firebase-functions/v2/https';
@@ -22,7 +23,13 @@ export const onSightingCreated = onDocumentCreated(
     const data = event.data?.data();
     if (!data) return;
 
-    const { pollutionClass, severity, confidence, county, agencyEmailed, photoUrl, latitude, longitude, resolveToken } = data;
+    const { pollutionClass, severity, confidence, county, agencyEmailed, photoUrl, latitude, longitude } = data;
+
+    // The resolve token authorizes marking a report resolved via a public
+    // email link, so it must be minted server-side with real randomness —
+    // never trust a client-supplied value for this.
+    const resolveToken = randomBytes(24).toString('hex');
+    await event.data?.ref.update({ resolveToken });
 
     if (!agencyEmailed || severity === 'NONE') return;
     if (confidence < 0.6) return;
@@ -44,10 +51,14 @@ export const onSightingCreated = onDocumentCreated(
   }
 );
 
-// Agency clicks "Mark Resolved" in their email → this function updates Firestore
-// and returns a simple confirmation page.
+// Agency clicks "Mark Resolved" in their email → GET renders a confirmation
+// page with a button; only the resulting POST actually mutates Firestore.
+// This matters because email security scanners (Outlook Safe Links, spam
+// filters, etc.) auto-crawl every link in an incoming email with a GET
+// request before a human ever opens it — a state-changing GET would let
+// that silently resolve real reports.
 export const resolveReport = onRequest(async (req, res) => {
-  const token = req.query.token as string | undefined;
+  const token = (req.method === 'POST' ? req.body?.token : req.query.token) as string | undefined;
 
   if (!token) {
     res.status(400).send(htmlPage('Missing token', 'This link is incomplete. Please use the link from the original email.'));
@@ -71,6 +82,11 @@ export const resolveReport = onRequest(async (req, res) => {
   if (data.resolved) {
     const when = data.resolvedAt?.toDate().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) ?? 'earlier';
     res.send(htmlPage('Already resolved', `This report was already marked as resolved on ${when}.`));
+    return;
+  }
+
+  if (req.method !== 'POST') {
+    res.send(confirmPage(token));
     return;
   }
 
@@ -164,6 +180,35 @@ function htmlPage(title: string, message: string): string {
     <div class="check">✓</div>
     <h1>${title}</h1>
     <p>${message}</p>
+  </div>
+</body>
+</html>`;
+}
+
+// Server-generated hex token — safe to interpolate directly, never user input.
+function confirmPage(token: string): string {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Confirm resolved — StreamWatch</title>
+  <style>
+    body { font-family: -apple-system, sans-serif; background: #0a0a0a; color: #fff; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
+    .card { background: #1c1c1e; border: 1px solid #2c2c2e; border-radius: 16px; padding: 40px; max-width: 420px; text-align: center; }
+    h1 { font-size: 22px; margin: 0 0 12px; }
+    p { color: #8e8e93; font-size: 15px; line-height: 1.5; margin: 0 0 24px; }
+    button { background: #34c759; color: #0a0a0a; border: none; border-radius: 10px; padding: 14px 28px; font-size: 16px; font-weight: 600; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Mark this report resolved?</h1>
+    <p>Confirm that this pollution report has been investigated and cleaned up. The community will see the updated status.</p>
+    <form method="POST" action="">
+      <input type="hidden" name="token" value="${token}">
+      <button type="submit">Confirm Resolved</button>
+    </form>
   </div>
 </body>
 </html>`;
