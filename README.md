@@ -95,8 +95,6 @@ EXPO_PUBLIC_FIREBASE_PROJECT_ID=
 EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET=
 EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=
 EXPO_PUBLIC_FIREBASE_APP_ID=
-
-EXPO_PUBLIC_GEMINI_API_KEY=          # free key from https://aistudio.google.com/apikey
 ```
 
 ### 3. Set up Firestore indexes
@@ -115,13 +113,14 @@ npx expo run:ios --device
 
 > **iOS 27 beta users:** The `EXPO_USE_PRECOMPILED_MODULES=false` flag is set in `ios/Podfile.properties.json` and a `SceneDelegate` stub is included to work around beta compatibility issues.
 
-### 5. Deploy Cloud Functions (optional)
+### 5. Deploy Cloud Functions
 
-Required for agency email alerts:
+Required for both photo classification and agency email alerts — the Gemini and SendGrid API keys live only here, never in the client bundle:
 
 ```bash
 cd functions
 npm install
+firebase functions:secrets:set GEMINI_API_KEY
 firebase functions:secrets:set SENDGRID_API_KEY
 firebase deploy --only functions
 ```
