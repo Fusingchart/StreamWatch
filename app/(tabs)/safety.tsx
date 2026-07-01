@@ -203,13 +203,6 @@ export default function SafetyScreen() {
               />
             }
           >
-            {/* Data note */}
-            <BlurView intensity={30} tint="dark" style={styles.sourceNote}>
-              <Text style={styles.sourceNoteText}>
-                Combines official water quality data (EPA BEACON, King County) with recent StreamWatch community reports within 3 km.
-              </Text>
-            </BlurView>
-
             {sortedSpots.map((spot) => {
               const result = results.find((r) => r.spotId === spot.id);
               return (
@@ -253,15 +246,6 @@ const styles = StyleSheet.create({
   loadingText: { color: colors.textMuted, fontSize: font.size.sm },
 
   list: { paddingHorizontal: space.md, paddingBottom: 110, gap: 10 },
-
-  sourceNote: {
-    borderRadius: radius.md, overflow: 'hidden',
-    borderWidth: 0.5, borderColor: colors.border,
-    padding: 12, marginBottom: 4,
-  },
-  sourceNoteText: {
-    fontSize: 11, color: colors.textMuted, lineHeight: 16, textAlign: 'center',
-  },
 
   card: {
     borderRadius: radius.md, overflow: 'hidden',
