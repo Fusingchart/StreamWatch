@@ -14,7 +14,7 @@ StreamWatch is an iOS app built for the [Congressional App Challenge 2026](https
 
 ## Features
 
-- **AI Classification** — YOLOv8 model (via Roboflow) identifies oil sheen, foam/suds, algal bloom, discoloration, solid debris, or clean water from a photo
+- **AI Classification** — Gemini 2.0 Flash vision model identifies oil sheen, foam/suds, algal bloom, discoloration, solid debris, or clean water from a photo
 - **Auto Agency Routing** — high-severity reports are emailed to the correct county or state agency automatically
 - **Resolution Tracking** — reports can be marked resolved by the community or by the agency itself via a secure email link, keeping the map and safety data current
 - **Swim Safety** — combines official water quality data (EPA BEACON, King County) with nearby unresolved StreamWatch reports to rate WA-01 beaches Safe / Caution / Avoid
@@ -30,7 +30,7 @@ StreamWatch is an iOS app built for the [Congressional App Challenge 2026](https
 |---|---|
 | Mobile | Expo SDK 56 (React Native, TypeScript) |
 | Routing | expo-router (file-based) |
-| AI | Roboflow YOLOv8 inference API |
+| AI | Google Gemini 2.0 Flash (vision) |
 | Backend | Firebase (Firestore, Storage, Anonymous Auth) |
 | Notifications | Cloud Functions v2 + SendGrid |
 | Maps | react-native-maps (Apple Maps) |
@@ -54,7 +54,7 @@ src/
 ├── components/          # Shared UI (DownstreamCard)
 ├── constants/           # Theme, pollution class definitions
 ├── data/                # Downstream POIs, waterway definitions, beach spots
-├── services/            # Firebase, Roboflow, sightings API, beach safety
+├── services/            # Firebase, Gemini classification, sightings API, beach safety
 ├── store/               # Zustand app state
 ├── types/               # TypeScript interfaces
 └── utils/               # Geocoding, agency routing
@@ -69,7 +69,7 @@ functions/               # Firebase Cloud Functions (email alerts + resolve endp
 - Node.js 18+
 - Xcode 16+ with iOS 15+ simulator or device
 - Firebase project (Blaze plan for Storage + Functions)
-- Roboflow account with a trained model
+- Google AI Studio API key (free tier) for Gemini vision
 - SendGrid account for email alerts
 
 ### 1. Clone and install
@@ -96,8 +96,7 @@ EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET=
 EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=
 EXPO_PUBLIC_FIREBASE_APP_ID=
 
-EXPO_PUBLIC_ROBOFLOW_API_KEY=
-EXPO_PUBLIC_ROBOFLOW_MODEL_ID=      # e.g. streamwatch/1
+EXPO_PUBLIC_GEMINI_API_KEY=          # free key from https://aistudio.google.com/apikey
 ```
 
 ### 3. Set up Firestore indexes

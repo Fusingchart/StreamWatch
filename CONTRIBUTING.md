@@ -5,7 +5,7 @@ Thank you for your interest in StreamWatch! This document explains how to contri
 ## Ways to Contribute
 
 - **Bug reports** — open an issue with steps to reproduce
-- **Pollution dataset** — label photos to improve the Roboflow model (most impactful)
+- **Classification prompt tuning** — refine the Gemini vision prompt in `src/services/gemini.ts` for edge cases (most impactful)
 - **Agency routing data** — help expand `src/utils/routing.ts` for additional counties
 - **Downstream POI data** — add verified points of interest to `src/data/downstream.ts`
 - **Feature development** — see open issues tagged `feature`
