@@ -102,15 +102,6 @@ export default function SightingDetail() {
         )}
       </View>
 
-      {/* Floating nav */}
-      <SafeAreaView edges={['top']} style={styles.navWrap} pointerEvents="box-none">
-        <TouchableOpacity onPress={() => router.back()} activeOpacity={0.75}>
-          <BlurView intensity={55} tint="dark" style={styles.backBtn}>
-            <ChevronLeft size={18} color="#fff" strokeWidth={2.5} />
-          </BlurView>
-        </TouchableOpacity>
-      </SafeAreaView>
-
       {/* Content scrolls over the hero */}
       <ScrollView
         style={styles.scroll}
@@ -235,6 +226,15 @@ export default function SightingDetail() {
           </TouchableOpacity>
         )}
       </ScrollView>
+
+      {/* Floating nav — rendered after the ScrollView so it stays on top for touches */}
+      <SafeAreaView edges={['top']} style={styles.navWrap} pointerEvents="box-none">
+        <TouchableOpacity onPress={() => router.back()} activeOpacity={0.75}>
+          <BlurView intensity={55} tint="dark" style={styles.backBtn}>
+            <ChevronLeft size={18} color="#fff" strokeWidth={2.5} />
+          </BlurView>
+        </TouchableOpacity>
+      </SafeAreaView>
     </View>
   );
 }
