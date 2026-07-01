@@ -21,20 +21,42 @@ function fetchWithTimeout(url: string, ms: number): Promise<Response> {
   return fetch(url, { signal: controller.signal }).finally(() => clearTimeout(timer));
 }
 
-// Bounding box covers WA-01: Snohomish + north King County + Island County
-const EPA_BBOX = encodeURIComponent(
-  JSON.stringify({ xmin: -123.5, ymin: 47.4, xmax: -121.3, ymax: 48.7 })
-);
+// This EPA layer is a polyline feature layer with no lat/lon attribute fields,
+// so beaches are matched by BEACH_NAME rather than by distance.
 const EPA_URL =
   'https://watersgeo.epa.gov/arcgis/rest/services/OWPROGRAM/BEACON_NAD83/MapServer/1/query' +
-  `?where=1%3D1&geometry=${EPA_BBOX}` +
-  '&geometryType=esriGeometryEnvelope&inSR=4326&spatialRel=esriSpatialRelIntersects' +
-  '&outFields=BEACH_NAME,STATUS,STATUS_DESC,DATE_VALUE,MLOC_LATITUDE,MLOC_LONGITUDE' +
+  "?where=STATE_CODE%3D%27WA%27" +
+  '&outFields=BEACH_NAME,STATUS,STATUS_DESC,DATE_VALUE,COUNTY_NAME' +
   '&returnGeometry=false&f=json';
 
-// King County swim beach bacteria — /api/views/ path works without an app token
+// King County's rows.json returns plain arrays, not objects. The first 8 entries
+// in every row are Socrata system columns (sid, id, position, timestamps, meta);
+// the actual dataset columns start at index 8, verified against the view's
+// metadata (https://data.kingcounty.gov/api/views/mbzm-4r9y.json):
+//   8 beach, 9 jurisdiction, 10 locator, 11 date, 12 day, 13 time,
+//   14 sampleA, 15 sampleB, 16 sampleC, 17 geomean30d, 18 nSamplesHigh30d,
+//   19 highToday, 20 waterTempC, 21 waterTempF
+const KC_COL = {
+  beach: 8, date: 11, geomean30d: 17, highToday: 19,
+} as const;
+
 const KING_COUNTY_URL =
-  'https://data.kingcounty.gov/api/views/mbzm-4r9y/rows.json?$limit=200';
+  'https://data.kingcounty.gov/api/views/mbzm-4r9y/rows.json?$limit=3000';
+
+interface EpaFeature {
+  BEACH_NAME: string;
+  STATUS: number | string;
+  STATUS_DESC: string;
+  DATE_VALUE: number;
+  COUNTY_NAME: string;
+}
+
+interface KcRow {
+  beach: string;
+  date: string | null;
+  geomean30d: number | null;
+  highToday: boolean | null;
+}
 
 async function fetchEpaBeaches(): Promise<EpaFeature[]> {
   try {
@@ -48,9 +70,8 @@ async function fetchEpaBeaches(): Promise<EpaFeature[]> {
       console.warn('[BeachSafety] EPA API error:', JSON.stringify(json.error));
       return [];
     }
-    const features = (json.features ?? []).map((f: any) => f.attributes ?? f);
-    console.log('[BeachSafety] EPA: got', features.length, 'features');
-    if (features.length > 0) console.log('[BeachSafety] EPA sample:', JSON.stringify(features[0]));
+    const features: EpaFeature[] = (json.features ?? []).map((f: any) => f.attributes ?? f);
+    console.log('[BeachSafety] EPA: got', features.length, 'WA features');
     return features;
   } catch (e: any) {
     console.warn('[BeachSafety] EPA fetch error:', e.message);
@@ -58,7 +79,7 @@ async function fetchEpaBeaches(): Promise<EpaFeature[]> {
   }
 }
 
-async function fetchKingCountyBeaches(): Promise<KcRecord[]> {
+async function fetchKingCountyBeaches(): Promise<KcRow[]> {
   try {
     const res = await fetchWithTimeout(KING_COUNTY_URL, 10000);
     if (!res.ok) {
@@ -66,34 +87,30 @@ async function fetchKingCountyBeaches(): Promise<KcRecord[]> {
       return [];
     }
     const json = await res.json();
-    const records = Array.isArray(json) ? json : (json.data ?? []);
-    console.log('[BeachSafety] KC: got', records.length, 'records');
-    if (records.length > 0) console.log('[BeachSafety] KC sample:', JSON.stringify(records[0]));
-    return records;
+    const raw: any[][] = json.data ?? [];
+    console.log('[BeachSafety] KC: got', raw.length, 'raw rows');
+
+    // Keep only the most recent row per beach
+    const latestByBeach = new Map<string, KcRow>();
+    for (const row of raw) {
+      const beach = row[KC_COL.beach];
+      if (!beach) continue;
+      const date = row[KC_COL.date];
+      const existing = latestByBeach.get(beach);
+      if (!existing || (date && (!existing.date || date > existing.date))) {
+        latestByBeach.set(beach, {
+          beach,
+          date: date ?? null,
+          geomean30d: row[KC_COL.geomean30d] != null ? Number(row[KC_COL.geomean30d]) : null,
+          highToday: row[KC_COL.highToday] === true || row[KC_COL.highToday] === 'true',
+        });
+      }
+    }
+    return [...latestByBeach.values()];
   } catch (e: any) {
     console.warn('[BeachSafety] KC fetch error:', e.message);
     return [];
   }
-}
-
-interface EpaFeature {
-  BEACH_NAME: string;
-  STATUS: number | string;
-  STATUS_DESC: string;
-  DATE_VALUE: string;
-  MLOC_LATITUDE: number;
-  MLOC_LONGITUDE: number;
-}
-
-interface KcRecord {
-  beach?: string;
-  locator?: string;
-  date?: string;
-  enterococcus?: string;
-  ecoli?: string;
-  result?: string;
-  action?: string;
-  [key: string]: any;
 }
 
 function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
@@ -108,23 +125,23 @@ function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): nu
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
+function normalize(s: string): string {
+  return s.toLowerCase().replace(/[^a-z0-9 ]/g, '').trim();
+}
+
 function epaStatusToLevel(status: number | string): SafetyLevel {
   const s = Number(status);
   if (s === 0) return 'SAFE';
   if (s === 1) return 'CAUTION';
   if (s === 2) return 'AVOID';
-  return 'UNKNOWN';
+  return 'UNKNOWN'; // e.g. 3 = Inactive monitoring site
 }
 
-function kcResultToLevel(record: KcRecord): SafetyLevel {
-  const action = (record.action ?? '').toLowerCase();
-  if (action.includes('clos') || action.includes('avoid')) return 'AVOID';
-  if (action.includes('caution') || action.includes('advisory') || action.includes('warn')) return 'CAUTION';
-  if (action.includes('open') || action.includes('safe') || action.includes('no action')) return 'SAFE';
-  const count = parseFloat(record.enterococcus ?? record.ecoli ?? '');
-  if (!isNaN(count)) {
-    if (count > 276) return 'AVOID';
-    if (count > 104) return 'CAUTION';
+function kcRowToLevel(row: KcRow): SafetyLevel {
+  if (row.highToday) return 'AVOID';
+  if (row.geomean30d != null) {
+    // WA DOH freshwater beach action threshold: 126 CFU/100mL geometric mean
+    if (row.geomean30d > 126) return 'CAUTION';
     return 'SAFE';
   }
   return 'UNKNOWN';
@@ -172,45 +189,40 @@ export async function fetchAllBeachSafety(
     let bacteriaCount: number | null = null;
     let baseLevel: SafetyLevel = 'UNKNOWN';
 
-    if (spot.type === 'saltwater' && epaData.length > 0) {
-      // Match by proximity (10km) first, then by name as tiebreaker
-      const candidates = epaData
-        .filter((f) => f.MLOC_LATITUDE && f.MLOC_LONGITUDE)
-        .map((f) => ({
-          f,
-          dist: haversineKm(spot.latitude, spot.longitude, f.MLOC_LATITUDE, f.MLOC_LONGITUDE),
-        }))
-        .filter(({ dist }) => dist < 10)
-        .sort((a, b) => a.dist - b.dist);
+    if (spot.type === 'saltwater' && spot.epaBeachName && epaData.length > 0) {
+      const target = normalize(spot.epaBeachName);
+      const match =
+        epaData.find((f) => normalize(f.BEACH_NAME) === target) ??
+        epaData.find((f) => normalize(f.BEACH_NAME).includes(target) || target.includes(normalize(f.BEACH_NAME)));
 
-      const match = candidates[0]?.f;
       if (match) {
         baseLevel = epaStatusToLevel(match.STATUS);
         officialStatus = match.STATUS_DESC || (baseLevel === 'SAFE' ? 'No advisory in effect' : baseLevel);
         officialSource = 'EPA BEACON';
-        lastUpdated = match.DATE_VALUE ?? null;
-        console.log(`[BeachSafety] ${spot.name} matched EPA: "${match.BEACH_NAME}" (${candidates[0].dist.toFixed(1)}km)`);
+        lastUpdated = match.DATE_VALUE ? new Date(match.DATE_VALUE).toISOString() : null;
+        console.log(`[BeachSafety] ${spot.name} matched EPA: "${match.BEACH_NAME}"`);
       } else {
-        console.log(`[BeachSafety] ${spot.name}: no EPA match within 10km`);
+        console.log(`[BeachSafety] ${spot.name}: no EPA match for "${spot.epaBeachName}"`);
       }
     }
 
-    if (spot.type === 'freshwater' && kcData.length > 0) {
-      const nameKey = (spot.kingCountyLocator ?? spot.waterBody).toLowerCase().split(' ')[0];
-      const match = kcData.find((r) => {
-        const beachName = (r.beach ?? r.locator ?? '').toLowerCase();
-        return beachName.includes(nameKey);
-      });
+    if (spot.type === 'freshwater' && spot.kingCountyLocator && kcData.length > 0) {
+      const target = normalize(spot.kingCountyLocator);
+      const match = kcData.find((r) => normalize(r.beach) === target);
+
       if (match) {
-        baseLevel = kcResultToLevel(match);
-        officialStatus = match.action || match.result || (baseLevel === 'SAFE' ? 'No advisory' : baseLevel);
+        baseLevel = kcRowToLevel(match);
+        officialStatus =
+          match.highToday ? 'Elevated bacteria levels — avoid contact'
+          : baseLevel === 'CAUTION' ? 'Bacteria trending above action level'
+          : baseLevel === 'SAFE' ? 'No advisory'
+          : null;
         officialSource = 'King County Environmental Health';
-        lastUpdated = match.date ?? null;
-        const raw = parseFloat(match.enterococcus ?? match.ecoli ?? '');
-        if (!isNaN(raw)) bacteriaCount = raw;
-        console.log(`[BeachSafety] ${spot.name} matched KC: "${match.beach ?? match.locator}"`);
+        lastUpdated = match.date;
+        bacteriaCount = match.geomean30d;
+        console.log(`[BeachSafety] ${spot.name} matched KC: "${match.beach}"`);
       } else {
-        console.log(`[BeachSafety] ${spot.name}: no KC match for key "${nameKey}"`);
+        console.log(`[BeachSafety] ${spot.name}: no KC match for "${spot.kingCountyLocator}"`);
       }
     }
 

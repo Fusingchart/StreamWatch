@@ -22,7 +22,7 @@ export const BEACH_SPOTS: BeachSpot[] = [
     longitude: -122.3062,
     county: 'Snohomish',
     waterBody: 'Puget Sound',
-    epaBeachName: 'Mukilteo State Park',
+    epaBeachName: 'Mukilteo Lighthouse Park',
   },
   {
     id: 'kayak-point',
@@ -32,7 +32,7 @@ export const BEACH_SPOTS: BeachSpot[] = [
     longitude: -122.3608,
     county: 'Snohomish',
     waterBody: 'Port Susan',
-    epaBeachName: 'Kayak Point',
+    epaBeachName: 'Kayak Point County Park',
   },
   {
     id: 'meadowdale',
@@ -42,7 +42,7 @@ export const BEACH_SPOTS: BeachSpot[] = [
     longitude: -122.3284,
     county: 'Snohomish',
     waterBody: 'Puget Sound',
-    epaBeachName: 'Meadowdale Beach',
+    epaBeachName: 'Meadowdale County Park',
   },
   {
     id: 'camano-island',
@@ -62,7 +62,7 @@ export const BEACH_SPOTS: BeachSpot[] = [
     longitude: -122.3847,
     county: 'Snohomish',
     waterBody: 'Puget Sound',
-    epaBeachName: 'Brackett Landing',
+    epaBeachName: "Brackett's Landing & Edmonds Underwater Park",
   },
   // Freshwater — Lakes
   {
@@ -73,7 +73,7 @@ export const BEACH_SPOTS: BeachSpot[] = [
     longitude: -122.0657,
     county: 'King',
     waterBody: 'Lake Sammamish',
-    kingCountyLocator: 'LAKE SAMMAMISH STATE PARK',
+    kingCountyLocator: 'Lake Sammamish State Park',
   },
   {
     id: 'lake-stevens',
