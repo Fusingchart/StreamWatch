@@ -21,14 +21,20 @@ function fetchWithTimeout(url: string, ms: number): Promise<Response> {
   return fetch(url, { signal: controller.signal }).finally(() => clearTimeout(timer));
 }
 
+// Bounding box covers WA-01: Snohomish + north King County + Island County
+const EPA_BBOX = encodeURIComponent(
+  JSON.stringify({ xmin: -123.5, ymin: 47.4, xmax: -121.3, ymax: 48.7 })
+);
 const EPA_URL =
   'https://watersgeo.epa.gov/arcgis/rest/services/OWPROGRAM/BEACON_NAD83/MapServer/1/query' +
-  "?where=STATE_CODE='WA'" +
+  `?where=1%3D1&geometry=${EPA_BBOX}` +
+  '&geometryType=esriGeometryEnvelope&inSR=4326&spatialRel=esriSpatialRelIntersects' +
   '&outFields=BEACH_NAME,STATUS,STATUS_DESC,DATE_VALUE,MLOC_LATITUDE,MLOC_LONGITUDE' +
   '&returnGeometry=false&f=json';
 
+// King County swim beach bacteria — /api/views/ path works without an app token
 const KING_COUNTY_URL =
-  'https://data.kingcounty.gov/resource/tc7s-d6aj.json?$limit=200&$order=date DESC';
+  'https://data.kingcounty.gov/api/views/mbzm-4r9y/rows.json?$limit=200';
 
 async function fetchEpaBeaches(): Promise<EpaFeature[]> {
   try {
