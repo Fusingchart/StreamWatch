@@ -4,10 +4,68 @@ service cloud.firestore {
     match /sightings/{id} {
       // Anyone signed in (including anonymous) can read non-hidden sightings
       allow read: if request.auth != null && resource.data.hidden == false;
-      // Only the owner can create their own sighting
-      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
-      // No client-side updates or deletes
-      allow update, delete: if false;
+
+      // Only the owner can create their own sighting, and only with a
+      // well-formed payload — this prevents a client from forging fields
+      // like agencyEmailed (which the resolveReport email relies on) or
+      // pre-marking a report as resolved/hidden.
+      allow create: if request.auth != null
+        && request.auth.uid == request.resource.data.userId
+        && request.resource.data.keys().hasOnly([
+             'userId', 'pollutionClass', 'severity', 'confidence',
+             'latitude', 'longitude', 'photoUrl', 'county', 'reportedAt',
+             'agencyEmailed', 'hidden', 'resolved', 'resolvedAt',
+             'resolvedBy', 'resolveToken'
+           ])
+        && request.resource.data.pollutionClass in [
+             'oil_sheen', 'foam_suds', 'discoloration',
+             'algal_bloom', 'solid_debris', 'clean_water'
+           ]
+        && request.resource.data.severity in ['HIGH', 'MEDIUM', 'NONE']
+        && request.resource.data.confidence is number
+        && request.resource.data.confidence >= 0
+        && request.resource.data.confidence <= 1
+        && request.resource.data.latitude is number
+        && request.resource.data.latitude >= -90
+        && request.resource.data.latitude <= 90
+        && request.resource.data.longitude is number
+        && request.resource.data.longitude >= -180
+        && request.resource.data.longitude <= 180
+        && request.resource.data.photoUrl is string
+        && request.resource.data.photoUrl.matches('https://firebasestorage\\.googleapis\\.com/.*')
+        && request.resource.data.county is string
+        && request.resource.data.hidden == false
+        && request.resource.data.resolved == false
+        && request.resource.data.resolvedAt == null
+        && request.resource.data.resolvedBy == null
+        && (
+             request.resource.data.agencyEmailed == null ||
+             request.resource.data.agencyEmailed in [
+               'spills@ecy.wa.gov',
+               'ecology.waste@wa.gov',
+               'wq@ecy.wa.gov',
+               'snohomish.county@co.snohomish.wa.us',
+               'snohomish.environmental@co.snohomish.wa.us',
+               'wtd@kingcounty.gov',
+               'king.environmental@kingcounty.gov',
+               'skagit.environmental@co.skagit.wa.us'
+             ]
+           );
+
+      // Any signed-in user may mark an unresolved report as resolved
+      // ("community" resolve) — but only that exact transition. Nothing else
+      // may change, and re-resolving an already-resolved report is blocked.
+      allow update: if request.auth != null
+        && resource.data.resolved == false
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['resolved', 'resolvedAt', 'resolvedBy'])
+        && request.resource.data.resolved == true
+        && request.resource.data.resolvedBy == 'community'
+        && request.resource.data.resolvedAt == request.time;
+
+      // Agency resolution goes through the resolveReport Cloud Function,
+      // which uses privileged Admin SDK access, not a client write.
+      allow delete: if false;
     }
   }
 }
