@@ -10,6 +10,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import { ChevronLeft, Send, Trash2, AlertTriangle, CheckCircle, MapPin } from 'lucide-react-native';
 import { uploadPhoto, submitSighting } from '../src/services/sightings';
+import { signInAnon } from '../src/services/firebase';
 import { useAppStore } from '../src/store';
 import { POLLUTION_CLASSES } from '../src/constants/pollution';
 import { getSeverity } from '../src/utils/routing';
@@ -36,6 +37,8 @@ export default function ConfirmScreen() {
   const pendingPhotoUri = useAppStore((s) => s.pendingPhotoUri);
   const addSighting = useAppStore((s) => s.addSighting);
   const clearPending = useAppStore((s) => s.clearPending);
+  const setUserId = useAppStore((s) => s.setUserId);
+  const setAuthError = useAppStore((s) => s.setAuthError);
 
   useEffect(() => {
     if (!pendingResult || !pendingPhotoUri) {
@@ -54,22 +57,41 @@ export default function ConfirmScreen() {
 
 
   async function handleSubmit() {
-    if (!userId || !pendingResult || !pendingPhotoUri) return;
+    if (!pendingResult || !pendingPhotoUri) return;
+
+    let activeUserId = userId;
+    if (!activeUserId) {
+      // Sign-in likely failed on launch (no network, Firebase hiccup) and
+      // was never retried — try once more right now instead of silently
+      // doing nothing when the user taps Submit.
+      try {
+        activeUserId = await signInAnon();
+        setUserId(activeUserId);
+      } catch (e: any) {
+        Alert.alert(
+          'Not signed in',
+          "Couldn't connect to sign you in, so this report can't be submitted yet. Check your connection and try again."
+        );
+        setAuthError(e.message ?? 'Sign-in failed');
+        return;
+      }
+    }
+
     setSubmitting(true);
     try {
       const [photoUrl, county] = await Promise.all([
-        uploadPhoto(pendingPhotoUri, userId),
+        uploadPhoto(pendingPhotoUri, activeUserId),
         getCounty(latitude, longitude),
       ]);
 
       const id = await submitSighting({
-        userId, pollutionClass: pendingResult.pollutionClass,
+        userId: activeUserId, pollutionClass: pendingResult.pollutionClass,
         severity, confidence: pendingResult.confidence,
         latitude, longitude, county, photoUrl,
       });
 
       addSighting({
-        id, userId, pollutionClass: pendingResult.pollutionClass,
+        id, userId: activeUserId, pollutionClass: pendingResult.pollutionClass,
         severity, confidence: pendingResult.confidence,
         latitude, longitude, county, photoUrl,
         reportedAt: new Date(), agencyEmailed: null, hidden: false,
