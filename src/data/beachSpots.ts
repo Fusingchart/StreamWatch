@@ -22,7 +22,7 @@ export const BEACH_SPOTS: BeachSpot[] = [
     longitude: -122.3062,
     county: 'Snohomish',
     waterBody: 'Puget Sound',
-    epaBeachName: 'Mukilteo Lighthouse Park',
+    epaBeachName: 'Mukilteo Community Beach',
   },
   {
     id: 'kayak-point',
