@@ -54,7 +54,7 @@ export async function classifyImage(photoUri: string): Promise<ClassificationRes
           { inline_data: { mime_type: 'image/jpeg', data: base64 } },
         ],
       }],
-      generationConfig: { temperature: 0, maxOutputTokens: 200 },
+      generationConfig: { temperature: 0, maxOutputTokens: 300, thinkingConfig: { thinkingBudget: 0 } },
     }),
   });
 
