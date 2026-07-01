@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo } from 'react';
+import { useState, useRef, useMemo, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
+  AppState,
   StatusBar,
 } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
@@ -13,8 +14,9 @@ import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Location from 'expo-location';
 import { router } from 'expo-router';
-import { Zap, Droplets } from 'lucide-react-native';
+import { Zap, Droplets, WifiOff } from 'lucide-react-native';
 import { classifyImage } from '../../src/services/gemini';
+import { enqueueReport, flushQueue, getQueuedReports } from '../../src/services/offlineQueue';
 import { useAppStore } from '../../src/store';
 import { POLLUTION_CLASSES } from '../../src/constants/pollution';
 import { computeWaterwayHealth } from '../../src/data/waterways';
@@ -62,9 +64,30 @@ function useStats() {
 export default function CameraScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const [busy, setBusy] = useState(false);
+  const [pendingCount, setPendingCount] = useState(0);
   const cameraRef = useRef<CameraView>(null);
+  const userId = useAppStore((s) => s.userId);
   const setPendingResult = useAppStore((s) => s.setPendingResult);
+  const addSighting = useAppStore((s) => s.addSighting);
   const stats = useStats();
+
+  const refreshPendingCount = useCallback(() => {
+    getQueuedReports().then((q) => setPendingCount(q.length));
+  }, []);
+
+  const attemptFlush = useCallback(() => {
+    if (!userId) return;
+    flushQueue(userId, addSighting).finally(refreshPendingCount);
+  }, [userId, addSighting, refreshPendingCount]);
+
+  useEffect(() => {
+    refreshPendingCount();
+    attemptFlush();
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') attemptFlush();
+    });
+    return () => sub.remove();
+  }, [attemptFlush, refreshPendingCount]);
 
   if (!permission) return <View style={styles.container} />;
 
@@ -93,12 +116,31 @@ export default function CameraScreen() {
       const photo = await cameraRef.current.takePictureAsync({ quality: 0.85 });
       if (!photo) throw new Error('No photo captured');
 
-      const [locResult, classification] = await Promise.all([
-        Location.requestForegroundPermissionsAsync().then((p) =>
-          p.granted ? Location.getCurrentPositionAsync() : null
-        ),
-        classifyImage(photo.uri),
-      ]);
+      // GPS works without a network connection, so get a location fix
+      // regardless of whether classification (which needs a network call)
+      // succeeds or not.
+      const locResult = await Location.requestForegroundPermissionsAsync().then((p) =>
+        p.granted ? Location.getCurrentPositionAsync() : null
+      );
+
+      let classification;
+      try {
+        classification = await classifyImage(photo.uri);
+      } catch (classifyError) {
+        // Most likely a flaky/absent connection — don't discard the report,
+        // save it locally and retry automatically once back online.
+        if (locResult) {
+          await enqueueReport(photo.uri, locResult.coords.latitude, locResult.coords.longitude);
+          refreshPendingCount();
+          Alert.alert(
+            'Saved offline',
+            "Couldn't reach the server, so this report was saved on your device. It'll submit automatically once you're back online."
+          );
+        } else {
+          Alert.alert('Error', "Couldn't classify the photo and no location was available. Please try again.");
+        }
+        return;
+      }
 
       setPendingResult(classification, photo.uri);
       router.push({
@@ -128,6 +170,14 @@ export default function CameraScreen() {
         <View style={styles.header}>
           <Droplets color="#fff" size={18} strokeWidth={2} />
           <Text style={styles.headerTitle}>StreamWatch</Text>
+          {pendingCount > 0 && (
+            <View style={styles.pendingPill}>
+              <WifiOff size={11} color={colors.warning} strokeWidth={2.2} />
+              <Text style={styles.pendingText}>
+                {pendingCount} pending
+              </Text>
+            </View>
+          )}
         </View>
         <Text style={styles.headerSub}>Point camera at any waterway</Text>
 
@@ -226,6 +276,12 @@ const styles = StyleSheet.create({
   },
   header: { flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 4 },
   headerTitle: { color: '#fff', fontSize: font.size.lg, fontWeight: font.weight.bold },
+  pendingPill: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    marginLeft: 'auto', paddingHorizontal: 8, paddingVertical: 3,
+    borderRadius: radius.full, backgroundColor: colors.warning + '22',
+  },
+  pendingText: { color: colors.warning, fontSize: 11, fontWeight: font.weight.semibold },
   headerSub: { color: 'rgba(255,255,255,0.55)', fontSize: font.size.sm, marginBottom: 14 },
 
   statsCard: {
