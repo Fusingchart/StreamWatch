@@ -33,8 +33,9 @@ function formatDate(raw: string | null): string | null {
 }
 
 function formatDistance(km: number): string {
-  if (km < 1) return `${Math.round(km * 1000)} m`;
-  return `${km.toFixed(1)} km`;
+  const miles = km * 0.621371;
+  if (miles < 0.1) return `${Math.round(miles * 5280)} ft`;
+  return `${miles.toFixed(1)} mi`;
 }
 
 interface CardProps {
