@@ -9,6 +9,12 @@ admin.initializeApp();
 
 const SENDGRID_API_KEY = defineSecret('SENDGRID_API_KEY');
 const FROM_EMAIL = 'reports@streamwatch.app';
+
+// TEMPORARY TEST MODE — remove before any real agency should receive email.
+// Redirects every agency notification to this address instead, so testing
+// never actually emails a government inbox. The real intended agency is
+// still shown in the subject/body for visibility while testing.
+const TEST_MODE_RECIPIENT = 'rishrao987@gmail.com';
 const PROJECT_ID = 'streamwatch-f1d98';
 const REGION = 'us-central1';
 
@@ -102,9 +108,9 @@ export const onSightingCreated = onDocumentCreated(
     sgMail.setApiKey(SENDGRID_API_KEY.value());
 
     const msg = {
-      to: agencyEmailed,
+      to: TEST_MODE_RECIPIENT,
       from: FROM_EMAIL,
-      subject: `[StreamWatch] ${severity} Severity: ${formatClass(pollutionClass)} in ${county} County`,
+      subject: `[TEST — would go to ${agencyEmailed}] [StreamWatch] ${severity} Severity: ${formatClass(pollutionClass)} in ${county} County`,
       text: buildEmailBody({
         pollutionClass, severity, confidence, county,
         photoUrl, latitude, longitude, resolveToken,
