@@ -7,7 +7,7 @@ import * as sgMail from '@sendgrid/mail';
 
 admin.initializeApp();
 
-const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY ?? '';
+const SENDGRID_API_KEY = defineSecret('SENDGRID_API_KEY');
 const FROM_EMAIL = 'reports@streamwatch.app';
 const PROJECT_ID = 'streamwatch-f1d98';
 const REGION = 'us-central1';
@@ -83,7 +83,7 @@ function resolveUrl(token: string): string {
 // Fired whenever a new sighting document is created in Firestore.
 // Routes an alert email to the correct agency based on pollution class + county.
 export const onSightingCreated = onDocumentCreated(
-  'sightings/{sightingId}',
+  { document: 'sightings/{sightingId}', secrets: [SENDGRID_API_KEY] },
   async (event) => {
     const data = event.data?.data();
     if (!data) return;
@@ -99,7 +99,7 @@ export const onSightingCreated = onDocumentCreated(
     if (!agencyEmailed || severity === 'NONE') return;
     if (confidence < 0.6) return;
 
-    sgMail.setApiKey(SENDGRID_API_KEY);
+    sgMail.setApiKey(SENDGRID_API_KEY.value());
 
     const msg = {
       to: agencyEmailed,
