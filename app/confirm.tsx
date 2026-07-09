@@ -26,6 +26,7 @@ const SEV_LABEL = {
   MEDIUM: 'Medium severity, agency will be notified',
   NONE: 'No pollution detected, no action needed',
 };
+const LOW_CONFIDENCE_LABEL = 'Detected, but confidence is too low to notify an agency automatically. Still recorded for the community map.';
 
 
 export default function ConfirmScreen() {
@@ -54,6 +55,17 @@ export default function ConfirmScreen() {
   const latitude = parseFloat(lat ?? '0');
   const longitude = parseFloat(lng ?? '0');
   const confidence = Math.round(pendingResult.confidence * 100);
+
+  // Mirrors the confidence gate in resolveAgency() (routing.ts) so the
+  // banner/alert never claims an agency was notified when it wasn't.
+  // County doesn't affect whether an email fires, only which address it
+  // goes to, so this doesn't need the async county lookup to be accurate.
+  const willNotifyAgency = severity !== 'NONE' && pendingResult.confidence >= 0.6;
+  const sevLabelText = severity === 'NONE'
+    ? SEV_LABEL.NONE
+    : willNotifyAgency
+      ? SEV_LABEL[severity]
+      : LOW_CONFIDENCE_LABEL;
 
 
   async function handleSubmit() {
@@ -102,9 +114,11 @@ export default function ConfirmScreen() {
       router.replace('/');
       Alert.alert(
         severity !== 'NONE' ? 'Report Submitted' : 'Sighting Recorded',
-        severity !== 'NONE'
-          ? 'The relevant agency has been notified.'
-          : 'No pollution detected at this location.'
+        severity === 'NONE'
+          ? 'No pollution detected at this location.'
+          : willNotifyAgency
+            ? 'The relevant agency has been notified.'
+            : 'Recorded for the community map. Confidence was too low to notify an agency automatically.'
       );
     } catch (e: any) {
       Alert.alert('Submission Failed', e.message ?? 'Please try again.');
@@ -166,7 +180,7 @@ export default function ConfirmScreen() {
                 ? <CheckCircle size={16} color={sevColor} strokeWidth={2} />
                 : <AlertTriangle size={16} color={sevColor} strokeWidth={2} />}
             </View>
-            <Text style={[styles.sevLabel, { color: sevColor }]}>{SEV_LABEL[severity]}</Text>
+            <Text style={[styles.sevLabel, { color: sevColor }]}>{sevLabelText}</Text>
           </BlurView>
 
           {/* Downstream impact card, only for non-clean detections */}
