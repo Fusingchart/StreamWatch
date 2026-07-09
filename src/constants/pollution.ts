@@ -8,13 +8,15 @@ export const POLLUTION_CLASSES: Record<
     label: 'Oil Sheen',
     severity: 'HIGH',
     color: '#FF6B35',
-    agencies: ['spills@ecy.wa.gov'],
+    // Ecology's real Northwest Region intake (verified: covers all WA-01
+    // counties). A true active spill should also go to SPILLS_HOTLINE.
+    agencies: ['nwroerts@ecy.wa.gov'],
   },
   foam_suds: {
     label: 'Foam / Suds',
     severity: 'HIGH',
     color: '#FF9F1C',
-    agencies: ['spills@ecy.wa.gov'],
+    agencies: ['nwroerts@ecy.wa.gov'],
   },
   algal_bloom: {
     label: 'Algal Bloom',
@@ -32,7 +34,9 @@ export const POLLUTION_CLASSES: Record<
     label: 'Solid Debris',
     severity: 'MEDIUM',
     color: '#6B6B6B',
-    agencies: ['ecology.waste@wa.gov'],
+    // No verified county public works email found for WA-01 counties;
+    // routes to Ecology's regional intake until one is confirmed.
+    agencies: ['nwroerts@ecy.wa.gov'],
   },
   clean_water: {
     label: 'Clean Water',
