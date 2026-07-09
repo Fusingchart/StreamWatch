@@ -71,7 +71,6 @@ async function fetchEpaBeaches(): Promise<EpaFeature[]> {
       return [];
     }
     const features: EpaFeature[] = (json.features ?? []).map((f: any) => f.attributes ?? f);
-    console.log('[BeachSafety] EPA: got', features.length, 'WA features');
     return features;
   } catch (e: any) {
     console.warn('[BeachSafety] EPA fetch error:', e.message);
@@ -88,7 +87,6 @@ async function fetchKingCountyBeaches(): Promise<KcRow[]> {
     }
     const json = await res.json();
     const raw: any[][] = json.data ?? [];
-    console.log('[BeachSafety] KC: got', raw.length, 'raw rows');
 
     // Keep only the most recent row per beach
     const latestByBeach = new Map<string, KcRow>();
@@ -200,9 +198,8 @@ export async function fetchAllBeachSafety(
         officialStatus = match.STATUS_DESC || (baseLevel === 'SAFE' ? 'No advisory in effect' : baseLevel);
         officialSource = 'EPA BEACON';
         lastUpdated = match.DATE_VALUE ? new Date(match.DATE_VALUE).toISOString() : null;
-        console.log(`[BeachSafety] ${spot.name} matched EPA: "${match.BEACH_NAME}"`);
       } else {
-        console.log(`[BeachSafety] ${spot.name}: no EPA match for "${spot.epaBeachName}"`);
+        console.warn(`[BeachSafety] ${spot.name}: no EPA match for "${spot.epaBeachName}"`);
       }
     }
 
@@ -220,9 +217,8 @@ export async function fetchAllBeachSafety(
         officialSource = 'King County Environmental Health';
         lastUpdated = match.date;
         bacteriaCount = match.geomean30d;
-        console.log(`[BeachSafety] ${spot.name} matched KC: "${match.beach}"`);
       } else {
-        console.log(`[BeachSafety] ${spot.name}: no KC match for "${spot.kingCountyLocator}"`);
+        console.warn(`[BeachSafety] ${spot.name}: no KC match for "${spot.kingCountyLocator}"`);
       }
     }
 

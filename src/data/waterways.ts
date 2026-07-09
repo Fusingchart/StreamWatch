@@ -146,7 +146,7 @@ export function computeWaterwayHealth(sightings: Sighting[]): WaterwayHealth[] {
       30
     );
     const delta = currentScore - priorScore;
-    const trend =
+    const trend: WaterwayHealth['trend'] =
       Math.abs(delta) < 3 ? 'stable' :
       delta > 0 ? 'improving' : 'declining';
 

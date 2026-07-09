@@ -52,8 +52,12 @@ export default function ConfirmScreen() {
   const meta = POLLUTION_CLASSES[pendingResult.pollutionClass];
   const severity = getSeverity(pendingResult.pollutionClass);
   const sevColor = SEV_COLOR[severity];
+  // Camera screen passes 0,0 when location permission was denied or GPS
+  // failed. Treated as "no location" rather than a real coordinate, since
+  // 0,0 (Gulf of Guinea) is never an actual WA-01 sighting.
   const latitude = parseFloat(lat ?? '0');
   const longitude = parseFloat(lng ?? '0');
+  const hasLocation = latitude !== 0 || longitude !== 0;
   const confidence = Math.round(pendingResult.confidence * 100);
 
   // Mirrors the confidence gate in resolveAgency() (routing.ts) so the
@@ -184,12 +188,12 @@ export default function ConfirmScreen() {
           </BlurView>
 
           {/* Downstream impact card, only for non-clean detections */}
-          {severity !== 'NONE' && latitude !== 0 && (
+          {severity !== 'NONE' && hasLocation && (
             <DownstreamCard latitude={latitude} longitude={longitude} sevColor={sevColor} />
           )}
 
           {/* Location */}
-          {latitude !== 0 && (
+          {hasLocation && (
             <BlurView intensity={50} tint="dark" style={styles.card}>
               <MapPin size={16} color={colors.textSecondary} strokeWidth={1.8} />
               <Text style={styles.locText}>
