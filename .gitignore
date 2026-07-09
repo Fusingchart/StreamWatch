@@ -16,3 +16,6 @@ android/
 firebase-debug.log
 functions/lib/
 functions/node_modules/
+.claude/
+CLAUDE.md
+AGENTS.md

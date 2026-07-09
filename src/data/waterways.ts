@@ -6,7 +6,7 @@ export interface Waterway {
   shortName: string;
   centerLat: number;
   centerLng: number;
-  // Approximate region — sightings within this box are assigned here
+  // Approximate region, sightings within this box are assigned here
   bounds: { minLat: number; maxLat: number; minLng: number; maxLng: number };
 }
 
@@ -162,5 +162,5 @@ export function computeWaterwayHealth(sightings: Sighting[]): WaterwayHealth[] {
       sightingCount: ws.length,
       lastReportedAt: sorted[0] ? new Date(sorted[0].reportedAt) : null,
     };
-  }).sort((a, b) => a.score - b.score); // worst first — most urgent at top
+  }).sort((a, b) => a.score - b.score); // worst first, most urgent at top
 }

@@ -153,7 +153,7 @@ export default function SightingDetail() {
           </View>
         </BlurView>
 
-        {/* Downstream impacts — hide once resolved */}
+        {/* Downstream impacts, hide once resolved */}
         {severity !== 'NONE' && !isResolved && (
           <DownstreamCard
             latitude={sighting.latitude}
@@ -227,7 +227,7 @@ export default function SightingDetail() {
         )}
       </ScrollView>
 
-      {/* Floating nav — rendered after the ScrollView so it stays on top for touches */}
+      {/* Floating nav, rendered after the ScrollView so it stays on top for touches */}
       <SafeAreaView edges={['top']} style={styles.navWrap} pointerEvents="box-none">
         <TouchableOpacity onPress={() => router.back()} activeOpacity={0.75}>
           <BlurView intensity={55} tint="dark" style={styles.backBtn}>

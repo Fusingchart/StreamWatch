@@ -6,23 +6,23 @@ StreamWatch is an iOS app built for the [Congressional App Challenge 2026](https
 
 **Report → Resolve → Protect**
 
-1. **Report** — anyone photographs a waterway; a YOLOv8 model instantly classifies the pollution type and the report is automatically routed to the right environmental agency.
-2. **Resolve** — the community or the notified agency (via a one-click email link) marks the issue cleared once it's cleaned up, so the map always reflects current conditions, not stale reports.
-3. **Protect** — that live report data is combined with official EPA and King County water-quality monitoring to tell nearby residents, in real time, whether a beach is safe to swim at.
+1. **Report**: anyone photographs a waterway, a Gemini vision model instantly classifies the pollution type, and the report is automatically routed to the right environmental agency.
+2. **Resolve**: the community or the notified agency (via a one-click email link) marks the issue cleared once it's cleaned up, so the map always reflects current conditions instead of stale reports.
+3. **Protect**: that live report data is combined with official EPA and King County water-quality monitoring to tell nearby residents, in real time, whether a beach is safe to swim at.
 
 ---
 
 ## Features
 
-- **AI Classification** — Gemini 2.0 Flash vision model identifies oil sheen, foam/suds, algal bloom, discoloration, solid debris, or clean water from a photo
-- **Auto Agency Routing** — high-severity reports are emailed to the correct county or state agency automatically
-- **Resolution Tracking** — reports can be marked resolved by the community or by the agency itself via a secure email link, keeping the map and safety data current
-- **Swim Safety** — combines official water quality data (EPA BEACON, King County) with nearby unresolved StreamWatch reports to rate WA-01 beaches Safe / Caution / Avoid
-- **Downstream Impact Cards** — every report shows which beaches, salmon habitat, shellfish beds, and drinking water intakes are at risk downstream
-- **Waterway Health Scores** — live 0–100 scores with trend tracking across 8 WA-01 waterways
-- **Community Map** — real-time map of all sightings with severity markers
-- **Sighting History** — full detail view with hero photo, mini map, resolution status, and agency notification status
-- **Anonymous by default** — Firebase anonymous auth, no account required
+- **AI Classification**: Gemini 2.5 Flash vision model identifies oil sheen, foam/suds, algal bloom, discoloration, solid debris, or clean water from a photo
+- **Auto Agency Routing**: high-severity reports are emailed to the correct county or state agency automatically
+- **Resolution Tracking**: reports can be marked resolved by the community or by the agency itself via a secure email link, keeping the map and safety data current
+- **Swim Safety**: combines official water quality data (EPA BEACON, King County) with nearby unresolved StreamWatch reports to rate WA-01 beaches Safe, Caution, or Avoid
+- **Downstream Impact Cards**: every report shows which beaches, salmon habitat, shellfish beds, and drinking water intakes are at risk downstream
+- **Waterway Health Scores**: live 0-100 scores with trend tracking across 8 WA-01 waterways
+- **Community Map**: real-time map of all sightings with severity markers
+- **Sighting History**: full detail view with hero photo, mini map, resolution status, and agency notification status
+- **Anonymous by default**: Firebase anonymous auth, no account required
 
 ## Tech Stack
 
@@ -30,7 +30,7 @@ StreamWatch is an iOS app built for the [Congressional App Challenge 2026](https
 |---|---|
 | Mobile | Expo SDK 56 (React Native, TypeScript) |
 | Routing | expo-router (file-based) |
-| AI | Google Gemini 2.0 Flash (vision) |
+| AI | Google Gemini 2.5 Flash (vision) |
 | Backend | Firebase (Firestore, Storage, Anonymous Auth) |
 | Notifications | Cloud Functions v2 + SendGrid |
 | Maps | react-native-maps (Apple Maps) |
@@ -99,23 +99,23 @@ EXPO_PUBLIC_FIREBASE_APP_ID=
 
 ### 3. Set up Firestore indexes
 
-The sightings query requires a composite index. On first run, the app logs a Firebase console URL — click it to create the index automatically.
+The sightings query requires a composite index. On first run, the app logs a Firebase console URL; click it to create the index automatically.
 
 ### 4. Run on iOS
 
 ```bash
-# Development build (required — Expo Go is not supported)
+# Development build (required, Expo Go is not supported)
 npx expo run:ios
 
 # Physical device
 npx expo run:ios --device
 ```
 
-> **iOS 27 beta users:** The `EXPO_USE_PRECOMPILED_MODULES=false` flag is set in `ios/Podfile.properties.json` and a `SceneDelegate` stub is included to work around beta compatibility issues.
+> **iOS 27 beta users:** the `EXPO_USE_PRECOMPILED_MODULES=false` flag is set in `ios/Podfile.properties.json` and a `SceneDelegate` stub is included to work around beta compatibility issues.
 
 ### 5. Deploy Cloud Functions
 
-Required for both photo classification and agency email alerts — the Gemini and SendGrid API keys live only here, never in the client bundle:
+Required for both photo classification and agency email alerts. The Gemini and SendGrid API keys live only here, never in the client bundle:
 
 ```bash
 cd functions
@@ -134,11 +134,11 @@ firebase deploy --only functions
 | Algal bloom | MEDIUM | County Health or Ecology |
 | Discoloration | MEDIUM | County Health or Ecology |
 | Solid debris | MEDIUM | County Public Works |
-| Clean water | NONE | — |
+| Clean water | NONE | n/a |
 
 ## WA-01 Waterways Monitored
 
-Snohomish River · Stillaguamish River · Pilchuck River · Wallace River · Sultan River · Skykomish River · Sammamish River · Lake Stevens
+Snohomish River, Stillaguamish River, Pilchuck River, Wallace River, Sultan River, Skykomish River, Sammamish River, Lake Stevens
 
 ## Swim Safety Data Sources
 
@@ -156,7 +156,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT, see [LICENSE](LICENSE).
 
 ---
 

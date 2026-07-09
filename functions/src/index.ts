@@ -10,7 +10,7 @@ admin.initializeApp();
 const SENDGRID_API_KEY = defineSecret('SENDGRID_API_KEY');
 const FROM_EMAIL = 'reports@streamwatch.app';
 
-// TEMPORARY TEST MODE — remove before any real agency should receive email.
+// TEMPORARY TEST MODE, remove before any real agency should receive email.
 // Redirects every agency notification to this address instead, so testing
 // never actually emails a government inbox. The real intended agency is
 // still shown in the subject/body for visibility while testing.
@@ -35,7 +35,7 @@ Respond with ONLY a JSON object, no markdown formatting, no explanation, in this
 {"pollutionClass": "<one of the categories above>", "confidence": <number 0 to 1>, "reasoning": "<one short sentence>"}`;
 
 // Proxies the vision classification call so the Gemini API key never ships
-// inside the app bundle — EXPO_PUBLIC_ vars are embedded in the client JS
+// inside the app bundle. EXPO_PUBLIC_ vars are embedded in the client JS
 // and readable by anyone who inspects the IPA or network traffic.
 export const classifyPollution = onCall(
   { secrets: [GEMINI_API_KEY] },
@@ -97,8 +97,8 @@ export const onSightingCreated = onDocumentCreated(
     const { pollutionClass, severity, confidence, county, agencyEmailed, photoUrl, latitude, longitude } = data;
 
     // The resolve token authorizes marking a report resolved via a public
-    // email link, so it must be minted server-side with real randomness —
-    // never trust a client-supplied value for this.
+    // email link, so it must be minted server-side with real randomness.
+    // Never trust a client-supplied value for this.
     const resolveToken = randomBytes(24).toString('hex');
     await event.data?.ref.update({ resolveToken });
 
@@ -110,7 +110,7 @@ export const onSightingCreated = onDocumentCreated(
     const msg = {
       to: TEST_MODE_RECIPIENT,
       from: FROM_EMAIL,
-      subject: `[TEST — would go to ${agencyEmailed}] [StreamWatch] ${severity} Severity: ${formatClass(pollutionClass)} in ${county} County`,
+      subject: `[TEST, would go to ${agencyEmailed}] [StreamWatch] ${severity} Severity: ${formatClass(pollutionClass)} in ${county} County`,
       text: buildEmailBody({
         pollutionClass, severity, confidence, county,
         photoUrl, latitude, longitude, resolveToken,
@@ -126,7 +126,7 @@ export const onSightingCreated = onDocumentCreated(
 // page with a button; only the resulting POST actually mutates Firestore.
 // This matters because email security scanners (Outlook Safe Links, spam
 // filters, etc.) auto-crawl every link in an incoming email with a GET
-// request before a human ever opens it — a state-changing GET would let
+// request before a human ever opens it. A state-changing GET would let
 // that silently resolve real reports.
 export const resolveReport = onRequest(async (req, res) => {
   const token = (req.method === 'POST' ? req.body?.token : req.query.token) as string | undefined;
@@ -227,7 +227,7 @@ to mark it as resolved in StreamWatch:
 
 This link is single-use and tied to this report only.
 
-Reported via StreamWatch — AI-powered waterway pollution detection for WA-01.
+Reported via StreamWatch, AI-powered waterway pollution detection for WA-01.
   `.trim();
 }
 
@@ -237,7 +237,7 @@ function htmlPage(title: string, message: string): string {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${title} — StreamWatch</title>
+  <title>${title} | StreamWatch</title>
   <style>
     body { font-family: -apple-system, sans-serif; background: #0a0a0a; color: #fff; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
     .card { background: #1c1c1e; border: 1px solid #2c2c2e; border-radius: 16px; padding: 40px; max-width: 420px; text-align: center; }
@@ -256,14 +256,14 @@ function htmlPage(title: string, message: string): string {
 </html>`;
 }
 
-// Server-generated hex token — safe to interpolate directly, never user input.
+// Server-generated hex token, safe to interpolate directly, never user input.
 function confirmPage(token: string): string {
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Confirm resolved — StreamWatch</title>
+  <title>Confirm resolved | StreamWatch</title>
   <style>
     body { font-family: -apple-system, sans-serif; background: #0a0a0a; color: #fff; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
     .card { background: #1c1c1e; border: 1px solid #2c2c2e; border-radius: 16px; padding: 40px; max-width: 420px; text-align: center; }

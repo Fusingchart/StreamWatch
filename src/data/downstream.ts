@@ -26,7 +26,7 @@ export const POI_META: Record<POIType, { emoji: string; label: string; color: st
 // Real WA-01 downstream points of interest.
 // "Downstream" in this watershed = generally westward toward Puget Sound.
 const POIS: DownstreamPOI[] = [
-  // ── Snohomish River corridor ──────────────────────────────────────────────
+  // Snohomish River corridor
   {
     id: 'snohomish_riverfront',
     name: 'Snohomish Riverfront Trail',
@@ -49,7 +49,7 @@ const POIS: DownstreamPOI[] = [
     type: 'salmon_habitat',
     waterway: 'Snohomish River',
     latitude: 47.9720, longitude: -122.2100,
-    description: 'ESA-listed Chinook salmon estuary — one of Puget Sound\'s largest remaining marshes',
+    description: 'ESA-listed Chinook salmon estuary, one of Puget Sound\'s largest remaining marshes',
   },
   {
     id: 'jetty_island',
@@ -68,17 +68,17 @@ const POIS: DownstreamPOI[] = [
     description: 'Federally designated critical habitat for Southern Resident Killer Whales',
   },
 
-  // ── Sultan River / Everett water supply ───────────────────────────────────
+  // Sultan River / Everett water supply
   {
     id: 'sultan_intake',
     name: 'Everett Water Supply (Sultan River)',
     type: 'water_intake',
     waterway: 'Sultan River',
     latitude: 47.8705, longitude: -121.6481,
-    description: 'Spada Lake reservoir — primary drinking water for 750,000+ Snohomish County residents',
+    description: 'Spada Lake reservoir, primary drinking water for 750,000+ Snohomish County residents',
   },
 
-  // ── Wallace River ─────────────────────────────────────────────────────────
+  // Wallace River
   {
     id: 'wallace_hatchery',
     name: 'Wallace River Salmon Hatchery',
@@ -88,7 +88,7 @@ const POIS: DownstreamPOI[] = [
     description: 'WDFW hatchery releasing ~500,000 Chinook smolts annually',
   },
 
-  // ── Pilchuck River ────────────────────────────────────────────────────────
+  // Pilchuck River
   {
     id: 'pilchuck_salmon',
     name: 'Pilchuck River Salmon Corridor',
@@ -98,7 +98,7 @@ const POIS: DownstreamPOI[] = [
     description: 'Recovered Coho and Chinook spawning grounds after 2019 culvert replacement',
   },
 
-  // ── Stillaguamish River corridor ──────────────────────────────────────────
+  // Stillaguamish River corridor
   {
     id: 'stillaguamish_salmon',
     name: 'Stillaguamish River Salmon Habitat',
@@ -113,7 +113,7 @@ const POIS: DownstreamPOI[] = [
     type: 'shellfish',
     waterway: 'Stillaguamish River / Port Susan',
     latitude: 48.1661, longitude: -122.3394,
-    description: 'Active commercial and tribal shellfish growing area — closures trigger at 14 cfu/100mL',
+    description: 'Active commercial and tribal shellfish growing area, closures trigger at 14 cfu/100mL',
   },
   {
     id: 'kayak_point',
@@ -121,37 +121,37 @@ const POIS: DownstreamPOI[] = [
     type: 'beach',
     waterway: 'Puget Sound',
     latitude: 48.1378, longitude: -122.3623,
-    description: 'County beach park — 2,500 average daily visitors in summer',
+    description: 'County beach park, 2,500 average daily visitors in summer',
   },
 
-  // ── Tulalip ───────────────────────────────────────────────────────────────
+  // Tulalip
   {
     id: 'tulalip_shellfish',
     name: 'Tulalip Bay Shellfish Beds',
     type: 'shellfish',
     waterway: 'Puget Sound',
     latitude: 48.0667, longitude: -122.2833,
-    description: 'Tulalip Tribes treaty-protected harvesting area — shellfish closures affect tribal food sovereignty',
+    description: 'Tulalip Tribes treaty-protected harvesting area, shellfish closures affect tribal food sovereignty',
   },
 
-  // ── Mukilteo ──────────────────────────────────────────────────────────────
+  // Mukilteo
   {
     id: 'mukilteo_beach',
     name: 'Mukilteo State Park Beach',
     type: 'beach',
     waterway: 'Puget Sound',
     latitude: 47.9497, longitude: -122.3041,
-    description: 'Popular swimming, fishing, and scuba beach — 100,000+ annual visitors',
+    description: 'Popular swimming, fishing, and scuba beach, 100,000+ annual visitors',
   },
 
-  // ── Sammamish River corridor (south WA-01) ────────────────────────────────
+  // Sammamish River corridor (south WA-01)
   {
     id: 'sammamish_salmon',
     name: 'Sammamish River Chinook Corridor',
     type: 'salmon_habitat',
     waterway: 'Sammamish River',
     latitude: 47.7619, longitude: -122.1650,
-    description: 'Restored urban salmon corridor through Redmond/Bothell — active recovery project',
+    description: 'Restored urban salmon corridor through Redmond/Bothell, active recovery project',
   },
   {
     id: 'blyth_park',

@@ -127,7 +127,7 @@ export default function CameraScreen() {
       try {
         classification = await classifyImage(photo.uri);
       } catch (classifyError) {
-        // Most likely a flaky/absent connection — don't discard the report,
+        // Most likely a flaky/absent connection. Don't discard the report,
         // save it locally and retry automatically once back online.
         if (locResult) {
           await enqueueReport(photo.uri, locResult.coords.latitude, locResult.coords.longitude);

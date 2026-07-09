@@ -8,7 +8,7 @@ export const colors = {
   warning: '#FF9F0A',
   success: '#30D158',
 
-  // Backgrounds — dark mode friendly
+  // Backgrounds, dark mode friendly
   bg: '#000000',
   bgSecondary: '#1C1C1E',
   card: 'rgba(28,28,30,0.72)',

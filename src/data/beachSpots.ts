@@ -13,7 +13,7 @@ export interface BeachSpot {
 }
 
 export const BEACH_SPOTS: BeachSpot[] = [
-  // Saltwater — Puget Sound
+  // Saltwater, Puget Sound
   {
     id: 'mukilteo',
     name: 'Mukilteo State Park',
@@ -64,7 +64,7 @@ export const BEACH_SPOTS: BeachSpot[] = [
     waterBody: 'Puget Sound',
     epaBeachName: "Brackett's Landing & Edmonds Underwater Park",
   },
-  // Freshwater — King County lakes (all within WA-01: Kirkland/Redmond/Sammamish)
+  // Freshwater, King County lakes (all within WA-01: Kirkland/Redmond/Sammamish)
   {
     id: 'lake-sammamish',
     name: 'Lake Sammamish State Park',

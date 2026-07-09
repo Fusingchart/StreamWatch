@@ -37,7 +37,7 @@ export async function getQueuedReports(): Promise<QueuedReport[]> {
 
 // Copies the photo out of the camera's temp cache into permanent storage
 // (the cache can be cleared by the OS at any time) and remembers it for
-// later retry — used when classification or location fails, most commonly
+// later retry. Used when classification or location fails, most commonly
 // because the device has no signal.
 export async function enqueueReport(
   photoUri: string,
@@ -67,7 +67,7 @@ async function removeFromQueue(id: string): Promise<void> {
 }
 
 // Attempts to submit every queued report. Stops at the first failure so we
-// don't hammer the network with N failing requests when still offline —
+// don't hammer the network with N failing requests when still offline,
 // the next trigger (app foreground, screen focus) will pick up where it left off.
 export async function flushQueue(
   userId: string,
@@ -106,7 +106,7 @@ export async function flushQueue(
 
       await removeFromQueue(entry.id);
     } catch {
-      // Still offline (or another transient failure) — leave it queued and
+      // Still offline (or another transient failure). Leave it queued and
       // stop for now rather than retrying the rest immediately.
       return;
     }

@@ -209,7 +209,7 @@ export default function MapScreen() {
           </BlurView>
         </BlurView>
 
-        {/* Severity filter — Reports view only */}
+        {/* Severity filter, Reports view only */}
         {view === 'sightings' && (
           <BlurView intensity={50} tint="dark" style={styles.filterWrap}>
             <FilterBar options={SEV_OPTIONS} value={sevFilter} onChange={(k) => {

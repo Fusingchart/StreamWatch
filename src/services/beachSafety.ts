@@ -14,7 +14,7 @@ export interface BeachSafetyResult {
   nearbyReportTitles: string[];
 }
 
-// AbortSignal.timeout is not available in Hermes — use AbortController manually
+// AbortSignal.timeout is not available in Hermes, use AbortController manually
 function fetchWithTimeout(url: string, ms: number): Promise<Response> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), ms);
@@ -213,7 +213,7 @@ export async function fetchAllBeachSafety(
       if (match) {
         baseLevel = kcRowToLevel(match);
         officialStatus =
-          match.highToday ? 'Elevated bacteria levels — avoid contact'
+          match.highToday ? 'Elevated bacteria levels, avoid contact'
           : baseLevel === 'CAUTION' ? 'Bacteria trending above action level'
           : baseLevel === 'SAFE' ? 'No advisory'
           : null;

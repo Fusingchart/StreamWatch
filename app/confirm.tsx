@@ -22,9 +22,9 @@ const SEV_COLOR = { HIGH: colors.high, MEDIUM: colors.warning, NONE: colors.none
 const SEV_BG = { HIGH: colors.high + '18', MEDIUM: colors.warning + '18', NONE: colors.none + '18' };
 const SEV_BORDER = { HIGH: colors.high + '44', MEDIUM: colors.warning + '44', NONE: colors.none + '44' };
 const SEV_LABEL = {
-  HIGH: 'High severity — agency will be notified',
-  MEDIUM: 'Medium severity — agency will be notified',
-  NONE: 'No pollution detected — no action needed',
+  HIGH: 'High severity, agency will be notified',
+  MEDIUM: 'Medium severity, agency will be notified',
+  NONE: 'No pollution detected, no action needed',
 };
 
 
@@ -62,7 +62,7 @@ export default function ConfirmScreen() {
     let activeUserId = userId;
     if (!activeUserId) {
       // Sign-in likely failed on launch (no network, Firebase hiccup) and
-      // was never retried — try once more right now instead of silently
+      // was never retried. Try once more right now instead of silently
       // doing nothing when the user taps Submit.
       try {
         activeUserId = await signInAnon();
@@ -169,7 +169,7 @@ export default function ConfirmScreen() {
             <Text style={[styles.sevLabel, { color: sevColor }]}>{SEV_LABEL[severity]}</Text>
           </BlurView>
 
-          {/* Downstream impact card — only for non-clean detections */}
+          {/* Downstream impact card, only for non-clean detections */}
           {severity !== 'NONE' && latitude !== 0 && (
             <DownstreamCard latitude={latitude} longitude={longitude} sevColor={sevColor} />
           )}
