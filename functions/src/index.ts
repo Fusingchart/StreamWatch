@@ -38,8 +38,14 @@ Respond with ONLY a JSON object, no markdown formatting, no explanation, in this
 // Proxies the vision classification call so the Gemini API key never ships
 // inside the app bundle. EXPO_PUBLIC_ vars are embedded in the client JS
 // and readable by anyone who inspects the IPA or network traffic.
+//
+// invoker: 'public' — this project isn't auto-granting gen 2 functions
+// public invoker access (confirmed by curling the deployed endpoint and
+// getting a raw 401 from Google's front end, before request.auth is ever
+// checked). Real caller auth is still enforced inside the handler via
+// request.auth below; this only controls reachability at the infra layer.
 export const classifyPollution = onCall(
-  { secrets: [GEMINI_API_KEY] },
+  { secrets: [GEMINI_API_KEY], invoker: 'public' },
   async (request) => {
     if (!request.auth) {
       throw new HttpsError('unauthenticated', 'Must be signed in to classify a photo.');
