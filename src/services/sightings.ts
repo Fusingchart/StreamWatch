@@ -57,9 +57,6 @@ export async function submitSighting(params: {
     resolved: false,
     resolvedAt: null,
     resolvedBy: null,
-    // Overwritten server-side with a cryptographically random value by the
-    // onSightingCreated Cloud Function before any email is sent.
-    resolveToken: '',
     reportedAt: serverTimestamp(),
   });
 
@@ -93,7 +90,6 @@ export function subscribeSightings(
         resolvedAt: data.resolvedAt?.toDate() ?? null,
         resolved: data.resolved ?? false,
         resolvedBy: data.resolvedBy ?? null,
-        resolveToken: data.resolveToken ?? '',
       };
     });
     onUpdate(sightings);

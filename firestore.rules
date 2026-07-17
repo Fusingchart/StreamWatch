@@ -8,14 +8,19 @@ service cloud.firestore {
       // Only the owner can create their own sighting, and only with a
       // well-formed payload — this prevents a client from forging fields
       // like agencyEmailed (which the resolveReport email relies on) or
-      // pre-marking a report as resolved/hidden.
+      // pre-marking a report as resolved/hidden. severity and agencyEmailed
+      // are still recomputed server-side in onSightingCreated before any
+      // email is sent, since a client can submit an internally-inconsistent
+      // pollutionClass/severity/agencyEmailed combination that still passes
+      // this validation (it only checks each field is individually
+      // well-formed, not that they're consistent with each other).
       allow create: if request.auth != null
         && request.auth.uid == request.resource.data.userId
         && request.resource.data.keys().hasOnly([
              'userId', 'pollutionClass', 'severity', 'confidence',
              'latitude', 'longitude', 'photoUrl', 'county', 'reportedAt',
              'agencyEmailed', 'hidden', 'resolved', 'resolvedAt',
-             'resolvedBy', 'resolveToken'
+             'resolvedBy'
            ])
         && request.resource.data.pollutionClass in [
              'oil_sheen', 'foam_suds', 'discoloration',
@@ -41,14 +46,8 @@ service cloud.firestore {
         && (
              request.resource.data.agencyEmailed == null ||
              request.resource.data.agencyEmailed in [
-               'spills@ecy.wa.gov',
-               'ecology.waste@wa.gov',
-               'wq@ecy.wa.gov',
-               'snohomish.county@co.snohomish.wa.us',
-               'snohomish.environmental@co.snohomish.wa.us',
-               'wtd@kingcounty.gov',
-               'king.environmental@kingcounty.gov',
-               'skagit.environmental@co.skagit.wa.us'
+               'nwroerts@ecy.wa.gov',
+               'lakes@kingcounty.gov'
              ]
            );
 
@@ -66,6 +65,16 @@ service cloud.firestore {
       // Agency resolution goes through the resolveReport Cloud Function,
       // which uses privileged Admin SDK access, not a client write.
       allow delete: if false;
+    }
+
+    // Holds the single-use token that authorizes resolveReport, keyed by
+    // sighting ID. Written only by onSightingCreated (Admin SDK, bypasses
+    // these rules) and never readable by clients — the sightings doc itself
+    // is readable by every signed-in user for the community map, and
+    // Firestore rules can't hide individual fields from an otherwise-
+    // readable document, so the token has to live somewhere else entirely.
+    match /resolveTokens/{sightingId} {
+      allow read, write: if false;
     }
   }
 }

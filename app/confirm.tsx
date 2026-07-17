@@ -111,7 +111,7 @@ export default function ConfirmScreen() {
         severity, confidence: pendingResult.confidence,
         latitude, longitude, county, photoUrl,
         reportedAt: new Date(), agencyEmailed: null, hidden: false,
-        resolved: false, resolvedAt: null, resolvedBy: null, resolveToken: '',
+        resolved: false, resolvedAt: null, resolvedBy: null,
       });
 
       clearPending();

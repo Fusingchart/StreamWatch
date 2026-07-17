@@ -101,7 +101,7 @@ export async function flushQueue(
         severity, confidence: classification.confidence,
         latitude: entry.latitude, longitude: entry.longitude, county, photoUrl,
         reportedAt: new Date(), agencyEmailed: null, hidden: false,
-        resolved: false, resolvedAt: null, resolvedBy: null, resolveToken: '',
+        resolved: false, resolvedAt: null, resolvedBy: null,
       });
 
       await removeFromQueue(entry.id);

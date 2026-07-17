@@ -24,7 +24,6 @@ export interface Sighting {
   resolved: boolean;
   resolvedAt: Date | null;
   resolvedBy: 'community' | 'agency' | null;
-  resolveToken: string;
 }
 
 export interface ClassificationResult {

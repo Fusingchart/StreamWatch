@@ -4,6 +4,7 @@ import { onDocumentCreated } from 'firebase-functions/v2/firestore';
 import { onRequest, onCall, HttpsError } from 'firebase-functions/v2/https';
 import { defineSecret } from 'firebase-functions/params';
 import * as sgMail from '@sendgrid/mail';
+import { getSeverity, resolveAgency, PollutionClass } from './routing';
 
 admin.initializeApp();
 
@@ -94,13 +95,30 @@ export const onSightingCreated = onDocumentCreated(
     const data = event.data?.data();
     if (!data) return;
 
-    const { pollutionClass, severity, confidence, county, agencyEmailed, photoUrl, latitude, longitude } = data;
+    const { pollutionClass, confidence, county, photoUrl, latitude, longitude } = data;
+    const sightingId = event.params.sightingId;
+
+    // Never trust severity/agencyEmailed from the client: Firestore rules
+    // only check each field is individually well-formed, not that they're
+    // consistent with pollutionClass + county, so a client could submit a
+    // real pollutionClass with a forged severity or an arbitrary (but
+    // allowlisted) agencyEmailed. Recompute both here from pollutionClass +
+    // county, which is the only combination that should ever drive an email,
+    // and correct the stored doc so the UI doesn't show the forged values.
+    const severity = getSeverity(pollutionClass as PollutionClass);
+    const agencyEmailed = resolveAgency(pollutionClass as PollutionClass, county, confidence);
 
     // The resolve token authorizes marking a report resolved via a public
-    // email link, so it must be minted server-side with real randomness.
-    // Never trust a client-supplied value for this.
+    // email link. It must be minted server-side with real randomness, and
+    // it must NOT live on the sightings doc itself: that doc is readable by
+    // every signed-in user (for the community map), and Firestore rules
+    // can't hide individual fields from an otherwise-readable document. A
+    // separate collection with no client read/write rule keeps it private.
     const resolveToken = randomBytes(24).toString('hex');
-    await event.data?.ref.update({ resolveToken });
+    await Promise.all([
+      admin.firestore().collection('resolveTokens').doc(sightingId).set({ token: resolveToken }),
+      event.data?.ref.update({ severity, agencyEmailed }),
+    ]);
 
     if (!agencyEmailed || severity === 'NONE') return;
     if (confidence < 0.6) return;
@@ -136,19 +154,25 @@ export const resolveReport = onRequest(async (req, res) => {
     return;
   }
 
-  const snap = await admin.firestore()
-    .collection('sightings')
-    .where('resolveToken', '==', token)
+  const tokenSnap = await admin.firestore()
+    .collection('resolveTokens')
+    .where('token', '==', token)
     .limit(1)
     .get();
 
-  if (snap.empty) {
+  if (tokenSnap.empty) {
     res.status(404).send(htmlPage('Not found', 'This report could not be found. It may have already been deleted.'));
     return;
   }
 
-  const docRef = snap.docs[0].ref;
-  const data = snap.docs[0].data();
+  const docRef = admin.firestore().collection('sightings').doc(tokenSnap.docs[0].id);
+  const docSnap = await docRef.get();
+  const data = docSnap.data();
+
+  if (!data) {
+    res.status(404).send(htmlPage('Not found', 'This report could not be found. It may have already been deleted.'));
+    return;
+  }
 
   if (data.resolved) {
     const when = data.resolvedAt?.toDate().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) ?? 'earlier';

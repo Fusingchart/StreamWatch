@@ -97,9 +97,13 @@ EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=
 EXPO_PUBLIC_FIREBASE_APP_ID=
 ```
 
-### 3. Set up Firestore indexes
+### 3. Deploy Firestore indexes
 
-The sightings query requires a composite index. On first run, the app logs a Firebase console URL; click it to create the index automatically.
+Two queries need composite indexes: the sightings feed (`hidden` + `reportedAt`) and the spam guard (`userId` + `reportedAt`). Both are defined in `firestore.indexes.json`:
+
+```bash
+firebase deploy --only firestore:indexes
+```
 
 ### 4. Run on iOS
 
