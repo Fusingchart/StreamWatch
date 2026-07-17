@@ -146,7 +146,12 @@ export const onSightingCreated = onDocumentCreated(
 // filters, etc.) auto-crawl every link in an incoming email with a GET
 // request before a human ever opens it. A state-changing GET would let
 // that silently resolve real reports.
-export const resolveReport = onRequest(async (req, res) => {
+// invoker: 'public' — agencies open this from an email link with no Google
+// auth, so it must be reachable unauthenticated. Firebase deploys the IAM
+// binding for this itself; without it, gen 2 functions default to private
+// and every request gets a 403 from Google's front end before our code
+// ever runs (auth is enforced by the resolveToken query/body param instead).
+export const resolveReport = onRequest({ invoker: 'public' }, async (req, res) => {
   const token = (req.method === 'POST' ? req.body?.token : req.query.token) as string | undefined;
 
   if (!token) {
