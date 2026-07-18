@@ -223,7 +223,42 @@ export const onSightingSpamCheck = onDocumentCreated(
       .get();
 
     if (recent.size > 5) {
-      await event.data?.ref.update({ hidden: true });
+      await event.data?.ref.update({ hidden: true, hiddenReason: 'spam' });
+    }
+  }
+);
+
+const REPORT_HIDE_THRESHOLD = 3;
+const REPEAT_OFFENDER_THRESHOLD = 2;
+
+// Content moderation: once a sighting collects enough reports, hide it. If
+// the same user has now had multiple sightings hidden this way, block them
+// from submitting new ones (checked in firestore.rules' sightings create rule).
+export const onReportCreated = onDocumentCreated(
+  'sightings/{sightingId}/reports/{reporterId}',
+  async (event) => {
+    const sightingId = event.params.sightingId;
+    const sightingRef = admin.firestore().collection('sightings').doc(sightingId);
+    const sightingSnap = await sightingRef.get();
+    const sighting = sightingSnap.data();
+    if (!sighting || sighting.hidden) return;
+
+    const reportsSnap = await sightingRef.collection('reports').get();
+    if (reportsSnap.size < REPORT_HIDE_THRESHOLD) return;
+
+    await sightingRef.update({ hidden: true, hiddenReason: 'reports' });
+
+    const priorHidden = await admin.firestore()
+      .collection('sightings')
+      .where('userId', '==', sighting.userId)
+      .where('hiddenReason', '==', 'reports')
+      .get();
+
+    if (priorHidden.size >= REPEAT_OFFENDER_THRESHOLD) {
+      await admin.firestore().collection('blockedUsers').doc(sighting.userId).set({
+        blockedAt: admin.firestore.FieldValue.serverTimestamp(),
+        reason: 'repeated reported content',
+      });
     }
   }
 );

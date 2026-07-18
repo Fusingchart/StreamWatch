@@ -3,6 +3,8 @@ import {
   addDoc,
   doc,
   updateDoc,
+  getDoc,
+  setDoc,
   query,
   where,
   orderBy,
@@ -69,6 +71,21 @@ export async function markResolved(sightingId: string): Promise<void> {
     resolvedAt: serverTimestamp(),
     resolvedBy: 'community',
   });
+}
+
+// Each reporter gets one report doc per sighting, keyed by their own uid,
+// so a single anonymous user can't inflate the count by reporting repeatedly.
+// A Cloud Function (onReportCreated) watches this subcollection and hides
+// the sighting once enough reports come in.
+export async function reportSighting(sightingId: string, reporterId: string): Promise<void> {
+  await setDoc(doc(db, SIGHTINGS, sightingId, 'reports', reporterId), {
+    reportedAt: serverTimestamp(),
+  });
+}
+
+export async function hasReported(sightingId: string, reporterId: string): Promise<boolean> {
+  const snap = await getDoc(doc(db, SIGHTINGS, sightingId, 'reports', reporterId));
+  return snap.exists();
 }
 
 export function subscribeSightings(

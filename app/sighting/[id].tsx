@@ -7,14 +7,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
-import { ChevronLeft, AlertTriangle, CheckCircle, MapPin, Mail, Droplets } from 'lucide-react-native';
+import { ChevronLeft, Flag, AlertTriangle, CheckCircle, MapPin, Mail, Droplets } from 'lucide-react-native';
 import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps';
 import { useAppStore } from '../../src/store';
 import { POLLUTION_CLASSES } from '../../src/constants/pollution';
 import { getSeverity } from '../../src/utils/routing';
 import { assignWaterway } from '../../src/data/waterways';
 import DownstreamCard from '../../src/components/DownstreamCard';
-import { markResolved } from '../../src/services/sightings';
+import { markResolved, reportSighting, hasReported } from '../../src/services/sightings';
 import { colors, font, radius, space } from '../../src/constants/theme';
 
 const SEV_COLOR  = { HIGH: colors.high, MEDIUM: colors.warning, NONE: colors.none };
@@ -31,11 +31,19 @@ function formatDate(date: Date): string {
 export default function SightingDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const sighting = useAppStore((s) => s.sightings.find((x) => x.id === id));
+  const userId = useAppStore((s) => s.userId);
   const [resolving, setResolving] = useState(false);
+  const [reported, setReported] = useState(false);
+  const [reporting, setReporting] = useState(false);
 
   useEffect(() => {
     if (!sighting) router.back();
   }, [sighting]);
+
+  useEffect(() => {
+    if (!id || !userId) return;
+    hasReported(id, userId).then(setReported).catch(() => {});
+  }, [id, userId]);
 
   const meta       = sighting ? POLLUTION_CLASSES[sighting.pollutionClass] : null;
   const severity   = sighting ? getSeverity(sighting.pollutionClass) : 'NONE';
@@ -71,6 +79,32 @@ export default function SightingDetail() {
               Alert.alert('Error', 'Could not update the report. Try again.');
             } finally {
               setResolving(false);
+            }
+          },
+        },
+      ]
+    );
+  }
+
+  async function handleReport() {
+    if (!userId) return;
+    Alert.alert(
+      'Report this photo?',
+      "Let us know if this photo is inappropriate, unrelated to water pollution, or spam. Reports are reviewed and content is hidden automatically once enough people flag it.",
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Report',
+          style: 'destructive',
+          onPress: async () => {
+            setReporting(true);
+            try {
+              await reportSighting(sighting!.id, userId);
+              setReported(true);
+            } catch {
+              Alert.alert('Error', 'Could not submit the report. Try again.');
+            } finally {
+              setReporting(false);
             }
           },
         },
@@ -234,6 +268,15 @@ export default function SightingDetail() {
             <ChevronLeft size={18} color="#fff" strokeWidth={2.5} />
           </BlurView>
         </TouchableOpacity>
+        <TouchableOpacity
+          onPress={handleReport}
+          disabled={reported || reporting}
+          activeOpacity={0.75}
+        >
+          <BlurView intensity={55} tint="dark" style={styles.backBtn}>
+            <Flag size={16} color={reported ? colors.textMuted : '#fff'} strokeWidth={2} />
+          </BlurView>
+        </TouchableOpacity>
       </SafeAreaView>
     </View>
   );
@@ -273,6 +316,7 @@ const styles = StyleSheet.create({
 
   navWrap: {
     position: 'absolute', top: 0, left: 0, right: 0,
+    flexDirection: 'row', justifyContent: 'space-between',
     paddingHorizontal: space.md, paddingTop: space.sm,
   },
   backBtn: {

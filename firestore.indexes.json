@@ -15,6 +15,14 @@
         { "fieldPath": "userId", "order": "ASCENDING" },
         { "fieldPath": "reportedAt", "order": "ASCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "sightings",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "userId", "order": "ASCENDING" },
+        { "fieldPath": "hiddenReason", "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

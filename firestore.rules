@@ -16,6 +16,7 @@ service cloud.firestore {
       // well-formed, not that they're consistent with each other).
       allow create: if request.auth != null
         && request.auth.uid == request.resource.data.userId
+        && !exists(/databases/$(database)/documents/blockedUsers/$(request.auth.uid))
         && request.resource.data.keys().hasOnly([
              'userId', 'pollutionClass', 'severity', 'confidence',
              'latitude', 'longitude', 'photoUrl', 'county', 'reportedAt',
@@ -65,6 +66,18 @@ service cloud.firestore {
       // Agency resolution goes through the resolveReport Cloud Function,
       // which uses privileged Admin SDK access, not a client write.
       allow delete: if false;
+
+      // Content moderation: anyone can flag a sighting, once each (keyed by
+      // their own uid so repeat-reporting by the same user can't inflate the
+      // count). onReportCreated (Cloud Function) watches this subcollection
+      // and hides the sighting once enough reports come in.
+      match /reports/{reporterId} {
+        allow create: if request.auth != null
+          && request.auth.uid == reporterId
+          && request.resource.data.keys().hasOnly(['reportedAt']);
+        allow read: if request.auth != null && request.auth.uid == reporterId;
+        allow update, delete: if false;
+      }
     }
 
     // Holds the single-use token that authorizes resolveReport, keyed by
@@ -74,6 +87,13 @@ service cloud.firestore {
     // Firestore rules can't hide individual fields from an otherwise-
     // readable document, so the token has to live somewhere else entirely.
     match /resolveTokens/{sightingId} {
+      allow read, write: if false;
+    }
+
+    // Users whose content has been auto-hidden for reports more than once.
+    // Written only by onReportCreated (Admin SDK); checked in the sightings
+    // create rule above to block further submissions from repeat offenders.
+    match /blockedUsers/{userId} {
       allow read, write: if false;
     }
   }
