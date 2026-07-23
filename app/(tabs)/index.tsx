@@ -10,11 +10,12 @@ import {
   StatusBar,
 } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
+import * as ImagePicker from 'expo-image-picker';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Location from 'expo-location';
 import { router } from 'expo-router';
-import { Zap, Droplets, WifiOff } from 'lucide-react-native';
+import { Zap, Droplets, WifiOff, ImagePlus } from 'lucide-react-native';
 import { classifyImage } from '../../src/services/gemini';
 import { enqueueReport, flushQueue, getQueuedReports } from '../../src/services/offlineQueue';
 import { useAppStore } from '../../src/store';
@@ -109,13 +110,10 @@ export default function CameraScreen() {
     );
   }
 
-  async function capture() {
-    if (!cameraRef.current || busy) return;
+  async function processPhoto(uri: string) {
+    if (busy) return;
     setBusy(true);
     try {
-      const photo = await cameraRef.current.takePictureAsync({ quality: 0.85 });
-      if (!photo) throw new Error('No photo captured');
-
       // GPS works without a network connection, so get a location fix
       // regardless of whether classification (which needs a network call)
       // succeeds or not.
@@ -125,12 +123,12 @@ export default function CameraScreen() {
 
       let classification;
       try {
-        classification = await classifyImage(photo.uri);
+        classification = await classifyImage(uri);
       } catch (classifyError) {
         // Most likely a flaky/absent connection. Don't discard the report,
         // save it locally and retry automatically once back online.
         if (locResult) {
-          await enqueueReport(photo.uri, locResult.coords.latitude, locResult.coords.longitude);
+          await enqueueReport(uri, locResult.coords.latitude, locResult.coords.longitude);
           refreshPendingCount();
           Alert.alert(
             'Saved offline',
@@ -142,7 +140,7 @@ export default function CameraScreen() {
         return;
       }
 
-      setPendingResult(classification, photo.uri);
+      setPendingResult(classification, uri);
       router.push({
         pathname: '/confirm',
         params: {
@@ -155,6 +153,31 @@ export default function CameraScreen() {
     } finally {
       setBusy(false);
     }
+  }
+
+  async function capture() {
+    if (!cameraRef.current || busy) return;
+    const photo = await cameraRef.current.takePictureAsync({ quality: 0.85 });
+    if (!photo) {
+      Alert.alert('Error', 'No photo captured');
+      return;
+    }
+    await processPhoto(photo.uri);
+  }
+
+  async function pickFromLibrary() {
+    if (busy) return;
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) {
+      Alert.alert('Photo Access Needed', 'Allow access to your photo library to upload an existing photo.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      quality: 0.85,
+    });
+    if (result.canceled || !result.assets[0]) return;
+    await processPhoto(result.assets[0].uri);
   }
 
   return (
@@ -227,11 +250,21 @@ export default function CameraScreen() {
             <Text style={styles.analyzingText}>Analyzing…</Text>
           </BlurView>
         ) : (
-          <TouchableOpacity onPress={capture} activeOpacity={0.85} style={styles.shutterWrapper}>
-            <View style={styles.shutterOuter}>
-              <View style={styles.shutterInner} />
-            </View>
-          </TouchableOpacity>
+          <View style={styles.actionsRow}>
+            <TouchableOpacity onPress={pickFromLibrary} activeOpacity={0.8} style={styles.galleryBtn}>
+              <BlurView intensity={50} tint="dark" style={styles.galleryBtnInner}>
+                <ImagePlus size={20} color="#fff" strokeWidth={2} />
+              </BlurView>
+            </TouchableOpacity>
+
+            <TouchableOpacity onPress={capture} activeOpacity={0.85} style={styles.shutterWrapper}>
+              <View style={styles.shutterOuter}>
+                <View style={styles.shutterInner} />
+              </View>
+            </TouchableOpacity>
+
+            <View style={styles.galleryBtn} />
+          </View>
         )}
       </LinearGradient>
     </View>
@@ -326,6 +359,10 @@ const styles = StyleSheet.create({
     position: 'absolute', bottom: 0, left: 0, right: 0,
     paddingBottom: 110, paddingTop: 60, alignItems: 'center',
   },
+  actionsRow: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    width: '100%', paddingHorizontal: 44,
+  },
   shutterWrapper: { alignItems: 'center', justifyContent: 'center' },
   shutterOuter: {
     width: 78, height: 78, borderRadius: 39,
@@ -334,6 +371,12 @@ const styles = StyleSheet.create({
   },
   shutterInner: {
     width: 62, height: 62, borderRadius: 31, backgroundColor: '#fff',
+  },
+  galleryBtn: { width: 44, height: 44 },
+  galleryBtnInner: {
+    width: 44, height: 44, borderRadius: radius.full,
+    overflow: 'hidden', alignItems: 'center', justifyContent: 'center',
+    borderWidth: 0.5, borderColor: 'rgba(255,255,255,0.25)',
   },
   analyzingPill: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
