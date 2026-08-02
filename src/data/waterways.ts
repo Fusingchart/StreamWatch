@@ -10,7 +10,9 @@ export interface Waterway {
   bounds: { minLat: number; maxLat: number; minLng: number; maxLng: number };
 }
 
-export interface WaterwayHealth {
+// Derived entirely from recent community-reported sightings — a proxy for
+// reported-problem activity, not a scientific water-quality assessment.
+export interface WaterwayReportScore {
   waterway: Waterway;
   score: number;          // 0–100
   trend: 'improving' | 'declining' | 'stable';
@@ -122,7 +124,7 @@ function scoreWindow(sightings: Sighting[], nowMs: number, windowDays: number): 
   return Math.max(0, Math.min(100, score));
 }
 
-export function computeWaterwayHealth(sightings: Sighting[]): WaterwayHealth[] {
+export function computeWaterwayReportScores(sightings: Sighting[]): WaterwayReportScore[] {
   const now = Date.now();
 
   // Group sightings by waterway
@@ -146,7 +148,7 @@ export function computeWaterwayHealth(sightings: Sighting[]): WaterwayHealth[] {
       30
     );
     const delta = currentScore - priorScore;
-    const trend: WaterwayHealth['trend'] =
+    const trend: WaterwayReportScore['trend'] =
       Math.abs(delta) < 3 ? 'stable' :
       delta > 0 ? 'improving' : 'declining';
 

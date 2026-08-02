@@ -19,7 +19,7 @@ StreamWatch is an iOS app built for the [Congressional App Challenge 2026](https
 - **Resolution Tracking**: reports can be marked resolved by the community or by the agency itself via a secure email link, keeping the map and safety data current
 - **Swim Safety**: combines official water quality data (EPA BEACON, King County) with nearby unresolved StreamWatch reports to rate WA-01 beaches Safe, Caution, or Avoid
 - **Downstream Impact Cards**: every report shows which beaches, salmon habitat, shellfish beds, and drinking water intakes are at risk downstream
-- **Waterway Health Scores**: live 0-100 scores with trend tracking across 8 WA-01 waterways
+- **Waterway Report Scores**: live 0-100 scores per waterway, based on recent community reports (not a scientific water-quality assessment), with trend tracking across 8 WA-01 waterways
 - **Community Map**: real-time map of all sightings with severity markers
 - **Sighting History**: full detail view with hero photo, mini map, resolution status, and agency notification status
 - **Anonymous by default**: Firebase anonymous auth, no account required
@@ -43,7 +43,7 @@ StreamWatch is an iOS app built for the [Congressional App Challenge 2026](https
 app/
 ├── (tabs)/
 │   ├── index.tsx        # Camera + classify + stats
-│   ├── map.tsx           # Community map + waterway health
+│   ├── map.tsx           # Community map + waterway report scores
 │   ├── safety.tsx        # Swim Safety (EPA/King County + reports)
 │   └── history.tsx       # Sighting list
 ├── confirm.tsx          # Review & submit report

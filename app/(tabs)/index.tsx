@@ -20,7 +20,7 @@ import { classifyImage } from '../../src/services/gemini';
 import { enqueueReport, flushQueue, getQueuedReports } from '../../src/services/offlineQueue';
 import { useAppStore } from '../../src/store';
 import { POLLUTION_CLASSES } from '../../src/constants/pollution';
-import { computeWaterwayHealth } from '../../src/data/waterways';
+import { computeWaterwayReportScores } from '../../src/data/waterways';
 import { colors, font, radius, space } from '../../src/constants/theme';
 
 function useStats() {
@@ -42,22 +42,22 @@ function useStats() {
     const topClass = Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0];
     const topLabel = topClass ? POLLUTION_CLASSES[topClass as keyof typeof POLLUTION_CLASSES]?.label : null;
 
-    // Overall watershed health
-    const healthScores = computeWaterwayHealth(sightings);
-    const avgHealth = healthScores.length > 0
-      ? Math.round(healthScores.reduce((s, h) => s + h.score, 0) / healthScores.length)
+    // Overall report score across all waterways
+    const reportScores = computeWaterwayReportScores(sightings);
+    const avgScore = reportScores.length > 0
+      ? Math.round(reportScores.reduce((s, h) => s + h.score, 0) / reportScores.length)
       : null;
 
-    const healthColor = avgHealth === null ? colors.textMuted
-      : avgHealth >= 80 ? colors.none
-      : avgHealth >= 55 ? colors.warning
+    const scoreColor = avgScore === null ? colors.textMuted
+      : avgScore >= 80 ? colors.none
+      : avgScore >= 55 ? colors.warning
       : colors.high;
 
     return {
       weekCount: thisWeek.length,
       topLabel,
-      avgHealth,
-      healthColor,
+      avgScore,
+      scoreColor,
     };
   }, [sightings]);
 }
@@ -212,10 +212,10 @@ export default function CameraScreen() {
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statItem}>
-            <Text style={[styles.statValue, { color: stats.healthColor }]}>
-              {stats.avgHealth ?? '—'}
+            <Text style={[styles.statValue, { color: stats.scoreColor }]}>
+              {stats.avgScore ?? '—'}
             </Text>
-            <Text style={styles.statLabel}>watershed health</Text>
+            <Text style={styles.statLabel}>report score</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statItem}>

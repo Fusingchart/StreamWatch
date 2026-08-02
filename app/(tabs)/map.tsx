@@ -9,7 +9,7 @@ import { useAppStore } from '../../src/store';
 import { POLLUTION_CLASSES } from '../../src/constants/pollution';
 import { colors, font, radius, space } from '../../src/constants/theme';
 import { Sighting } from '../../src/types';
-import { computeWaterwayHealth, WaterwayHealth } from '../../src/data/waterways';
+import { computeWaterwayReportScores, WaterwayReportScore } from '../../src/data/waterways';
 import FilterBar, { FilterOption } from '../../src/components/FilterBar';
 
 const SEV_OPTIONS: FilterOption[] = [
@@ -32,7 +32,7 @@ function scoreColor(score: number): string {
   return colors.high;
 }
 
-function TrendBadge({ trend, delta }: { trend: WaterwayHealth['trend']; delta: number }) {
+function TrendBadge({ trend, delta }: { trend: WaterwayReportScore['trend']; delta: number }) {
   const map = {
     improving: { symbol: '↑', color: colors.none },
     declining:  { symbol: '↓', color: colors.high },
@@ -46,7 +46,7 @@ function TrendBadge({ trend, delta }: { trend: WaterwayHealth['trend']; delta: n
   );
 }
 
-function HealthScoreRing({ score }: { score: number }) {
+function ScoreRing({ score }: { score: number }) {
   const color = scoreColor(score);
   return (
     <View style={[styles.scoreRing, { borderColor: color + '55' }]}>
@@ -57,13 +57,13 @@ function HealthScoreRing({ score }: { score: number }) {
 }
 
 function WaterwayCard({
-  health,
+  reportScore,
   onPress,
 }: {
-  health: WaterwayHealth;
+  reportScore: WaterwayReportScore;
   onPress: () => void;
 }) {
-  const { waterway, score, trend, trendDelta, sightingCount } = health;
+  const { waterway, score, trend, trendDelta, sightingCount } = reportScore;
   const color = scoreColor(score);
   const barWidth = `${score}%` as any;
 
@@ -96,7 +96,7 @@ export default function MapScreen() {
   const sightings = useAppStore((s) => s.sightings);
   const setSightings = useAppStore((s) => s.setSightings);
   const [selected, setSelected] = useState<Sighting | null>(null);
-  const [view, setView] = useState<'sightings' | 'health'>('sightings');
+  const [view, setView] = useState<'sightings' | 'score'>('sightings');
   const [sevFilter, setSevFilter] = useState('ALL');
 
   useEffect(() => {
@@ -108,11 +108,11 @@ export default function MapScreen() {
     sevFilter === 'ALL' ? sightings : sightings.filter((s) => s.severity === sevFilter),
   [sightings, sevFilter]);
 
-  const healthScores = useMemo(() => computeWaterwayHealth(sightings), [sightings]);
-  const overallHealth = useMemo(() => {
-    if (healthScores.length === 0) return null;
-    return Math.round(healthScores.reduce((s, h) => s + h.score, 0) / healthScores.length);
-  }, [healthScores]);
+  const reportScores = useMemo(() => computeWaterwayReportScores(sightings), [sightings]);
+  const overallScore = useMemo(() => {
+    if (reportScores.length === 0) return null;
+    return Math.round(reportScores.reduce((s, h) => s + h.score, 0) / reportScores.length);
+  }, [reportScores]);
 
   async function centerOnUser() {
     const { status } = await Location.requestForegroundPermissionsAsync();
@@ -126,10 +126,10 @@ export default function MapScreen() {
     }, 600);
   }
 
-  function flyToWaterway(health: WaterwayHealth) {
+  function flyToWaterway(reportScore: WaterwayReportScore) {
     mapRef.current?.animateToRegion({
-      latitude: health.waterway.centerLat,
-      longitude: health.waterway.centerLng,
+      latitude: reportScore.waterway.centerLat,
+      longitude: reportScore.waterway.centerLng,
       latitudeDelta: 0.25,
       longitudeDelta: 0.25,
     }, 600);
@@ -182,9 +182,9 @@ export default function MapScreen() {
         <BlurView intensity={60} tint="dark" style={styles.header}>
           <View>
             <Text style={styles.heading}>Map</Text>
-            {overallHealth !== null && (
-              <Text style={[styles.overallHealth, { color: scoreColor(overallHealth) }]}>
-                Watershed health: {overallHealth}/100
+            {overallScore !== null && (
+              <Text style={[styles.overallScoreText, { color: scoreColor(overallScore) }]}>
+                Report score: {overallScore}/100
               </Text>
             )}
           </View>
@@ -199,11 +199,11 @@ export default function MapScreen() {
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
-              onPress={() => { setView('health'); setSelected(null); }}
-              style={[styles.toggleBtn, view === 'health' && styles.toggleActive]}
+              onPress={() => { setView('score'); setSelected(null); }}
+              style={[styles.toggleBtn, view === 'score' && styles.toggleActive]}
             >
-              <Text style={[styles.toggleText, view === 'health' && styles.toggleTextActive]}>
-                Health
+              <Text style={[styles.toggleText, view === 'score' && styles.toggleTextActive]}>
+                Score
               </Text>
             </TouchableOpacity>
           </BlurView>
@@ -227,19 +227,19 @@ export default function MapScreen() {
         </TouchableOpacity>
       </SafeAreaView>
 
-      {/* Health scores panel */}
-      {view === 'health' && (
-        <View style={styles.healthPanel} pointerEvents="box-none">
+      {/* Report score panel */}
+      {view === 'score' && (
+        <View style={styles.scorePanel} pointerEvents="box-none">
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.healthScroll}
+            contentContainerStyle={styles.scoreScroll}
           >
-            {healthScores.map((h) => (
+            {reportScores.map((rs) => (
               <WaterwayCard
-                key={h.waterway.id}
-                health={h}
-                onPress={() => flyToWaterway(h)}
+                key={rs.waterway.id}
+                reportScore={rs}
+                onPress={() => flyToWaterway(rs)}
               />
             ))}
           </ScrollView>
@@ -284,7 +284,7 @@ const styles = StyleSheet.create({
     borderWidth: 0.5, borderColor: colors.border,
   },
   heading: { fontSize: font.size.xl, fontWeight: font.weight.bold, color: colors.text },
-  overallHealth: { fontSize: 11, fontWeight: font.weight.medium, marginTop: 1 },
+  overallScoreText: { fontSize: 11, fontWeight: font.weight.medium, marginTop: 1 },
 
   toggle: {
     flexDirection: 'row', borderRadius: radius.md,
@@ -323,9 +323,9 @@ const styles = StyleSheet.create({
   calloutClass: { fontSize: font.size.sm, fontWeight: font.weight.semibold, color: colors.text },
   calloutSub: { fontSize: 11, color: colors.textMuted, marginTop: 2 },
 
-  // Health panel
-  healthPanel: { position: 'absolute', bottom: 110, left: 0, right: 0 },
-  healthScroll: { paddingHorizontal: space.md, gap: 10 },
+  // Report score panel
+  scorePanel: { position: 'absolute', bottom: 110, left: 0, right: 0 },
+  scoreScroll: { paddingHorizontal: space.md, gap: 10 },
 
   waterwayCard: {
     width: 160, flexDirection: 'row',

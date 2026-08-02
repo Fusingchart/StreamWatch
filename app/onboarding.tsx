@@ -41,7 +41,7 @@ const SLIDES = [
     accentColor: colors.warning,
     gradientColors: ['#1a1000', '#000'] as const,
     title: 'See what others\nare finding',
-    body: 'Reports from the whole community build waterway health scores over time. You can see which rivers are improving, which are getting worse, and what is at risk downstream.',
+    body: 'Reports from the whole community build a report score for each waterway over time. You can see which rivers are improving, which are getting worse, and what is at risk downstream.',
     detail: null,
   },
 ];
