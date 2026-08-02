@@ -8,12 +8,17 @@ export type PollutionClass =
 
 export type Severity = 'HIGH' | 'MEDIUM' | 'NONE';
 
+// A visual estimate from the classifier, not a calibrated instrument
+// reading (a real turbidity measurement requires a light-scatter sensor).
+export type Turbidity = 'clear' | 'slight' | 'moderate' | 'severe';
+
 export interface Sighting {
   id: string;
   userId: string;
   pollutionClass: PollutionClass;
   confidence: number;
   severity: Severity;
+  turbidity: Turbidity;
   latitude: number;
   longitude: number;
   photoUrl: string;
@@ -29,5 +34,6 @@ export interface Sighting {
 export interface ClassificationResult {
   pollutionClass: PollutionClass;
   confidence: number;
+  turbidity: Turbidity;
   allScores: Partial<Record<PollutionClass, number>>;
 }

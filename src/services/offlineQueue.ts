@@ -90,6 +90,7 @@ export async function flushQueue(
         pollutionClass: classification.pollutionClass,
         severity,
         confidence: classification.confidence,
+        turbidity: classification.turbidity,
         latitude: entry.latitude,
         longitude: entry.longitude,
         county,
@@ -98,7 +99,7 @@ export async function flushQueue(
 
       onSubmitted?.({
         id, userId, pollutionClass: classification.pollutionClass,
-        severity, confidence: classification.confidence,
+        severity, confidence: classification.confidence, turbidity: classification.turbidity,
         latitude: entry.latitude, longitude: entry.longitude, county, photoUrl,
         reportedAt: new Date(), agencyEmailed: null, hidden: false,
         resolved: false, resolvedAt: null, resolvedBy: null,

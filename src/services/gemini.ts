@@ -1,15 +1,17 @@
 import { File } from 'expo-file-system';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { app } from './firebase';
-import { ClassificationResult, PollutionClass } from '../types';
+import { ClassificationResult, PollutionClass, Turbidity } from '../types';
 
 const CLASSES: PollutionClass[] = [
   'oil_sheen', 'foam_suds', 'discoloration', 'algal_bloom', 'solid_debris', 'clean_water',
 ];
+const TURBIDITY_LEVELS: Turbidity[] = ['clear', 'slight', 'moderate', 'severe'];
 
 interface ClassifyResponse {
   pollutionClass: string;
   confidence: number;
+  turbidity: string;
 }
 
 // Classification runs server-side (functions/src/index.ts: classifyPollution)
@@ -25,10 +27,14 @@ export async function classifyImage(photoUri: string): Promise<ClassificationRes
     ? (result.data.pollutionClass as PollutionClass)
     : 'clean_water';
   const confidence = typeof result.data.confidence === 'number' ? result.data.confidence : 0.75;
+  const turbidity = TURBIDITY_LEVELS.includes(result.data.turbidity as Turbidity)
+    ? (result.data.turbidity as Turbidity)
+    : 'clear';
 
   return {
     pollutionClass,
     confidence,
+    turbidity,
     allScores: { [pollutionClass]: confidence } as Partial<Record<PollutionClass, number>>,
   };
 }

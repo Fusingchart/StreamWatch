@@ -18,7 +18,7 @@ service cloud.firestore {
         && request.auth.uid == request.resource.data.userId
         && !exists(/databases/$(database)/documents/blockedUsers/$(request.auth.uid))
         && request.resource.data.keys().hasOnly([
-             'userId', 'pollutionClass', 'severity', 'confidence',
+             'userId', 'pollutionClass', 'severity', 'confidence', 'turbidity',
              'latitude', 'longitude', 'photoUrl', 'county', 'reportedAt',
              'agencyEmailed', 'hidden', 'resolved', 'resolvedAt',
              'resolvedBy'
@@ -31,6 +31,7 @@ service cloud.firestore {
         && request.resource.data.confidence is number
         && request.resource.data.confidence >= 0
         && request.resource.data.confidence <= 1
+        && request.resource.data.turbidity in ['clear', 'slight', 'moderate', 'severe']
         && request.resource.data.latitude is number
         && request.resource.data.latitude >= -90
         && request.resource.data.latitude <= 90

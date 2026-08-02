@@ -14,7 +14,7 @@ import {
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from './firebase';
-import { Sighting, PollutionClass, Severity } from '../types';
+import { Sighting, PollutionClass, Severity, Turbidity } from '../types';
 import { resolveAgency } from '../utils/routing';
 
 const SIGHTINGS = 'sightings';
@@ -41,6 +41,7 @@ export async function submitSighting(params: {
   pollutionClass: PollutionClass;
   severity: Severity;
   confidence: number;
+  turbidity: Turbidity;
   latitude: number;
   longitude: number;
   county: string;
@@ -107,6 +108,7 @@ export function subscribeSightings(
         resolvedAt: data.resolvedAt?.toDate() ?? null,
         resolved: data.resolved ?? false,
         resolvedBy: data.resolvedBy ?? null,
+        turbidity: data.turbidity ?? 'clear',
       };
     });
     onUpdate(sightings);

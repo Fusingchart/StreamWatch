@@ -17,6 +17,7 @@ import { getSeverity } from '../src/utils/routing';
 import { getCounty } from '../src/utils/geocode';
 import { colors, font, radius, space } from '../src/constants/theme';
 import DownstreamCard from '../src/components/DownstreamCard';
+import { Turbidity } from '../src/types';
 
 const SEV_COLOR = { HIGH: colors.high, MEDIUM: colors.warning, NONE: colors.none };
 const SEV_BG = { HIGH: colors.high + '18', MEDIUM: colors.warning + '18', NONE: colors.none + '18' };
@@ -27,6 +28,15 @@ const SEV_LABEL = {
   NONE: 'No pollution detected, no action needed',
 };
 const LOW_CONFIDENCE_LABEL = 'Detected, but confidence is too low to notify an agency automatically. Still recorded for the community map.';
+
+// A visual estimate from the classifier, independent of pollution class or
+// color (e.g. tannin-stained water can be clear; muddy runoff is turbid).
+const TURBIDITY_LABEL: Record<Turbidity, string> = {
+  clear: 'Clear',
+  slight: 'Slightly turbid',
+  moderate: 'Moderately turbid',
+  severe: 'Severely turbid',
+};
 
 
 export default function ConfirmScreen() {
@@ -102,13 +112,13 @@ export default function ConfirmScreen() {
 
       const id = await submitSighting({
         userId: activeUserId, pollutionClass: pendingResult.pollutionClass,
-        severity, confidence: pendingResult.confidence,
+        severity, confidence: pendingResult.confidence, turbidity: pendingResult.turbidity,
         latitude, longitude, county, photoUrl,
       });
 
       addSighting({
         id, userId: activeUserId, pollutionClass: pendingResult.pollutionClass,
-        severity, confidence: pendingResult.confidence,
+        severity, confidence: pendingResult.confidence, turbidity: pendingResult.turbidity,
         latitude, longitude, county, photoUrl,
         reportedAt: new Date(), agencyEmailed: null, hidden: false,
         resolved: false, resolvedAt: null, resolvedBy: null,
@@ -171,6 +181,7 @@ export default function ConfirmScreen() {
                 </View>
                 <Text style={[styles.confPct, { color: meta.color }]}>{confidence}%</Text>
               </View>
+              <Text style={styles.turbidityText}>{TURBIDITY_LABEL[pendingResult.turbidity]}</Text>
             </View>
           </BlurView>
 
@@ -268,6 +279,7 @@ const styles = StyleSheet.create({
   },
   confFill: { height: '100%', borderRadius: radius.full },
   confPct: { fontSize: font.size.sm, fontWeight: font.weight.bold, width: 34, textAlign: 'right' },
+  turbidityText: { fontSize: font.size.sm, color: colors.textSecondary, marginTop: 8 },
 
   sevBanner: {
     flexDirection: 'row', alignItems: 'center', gap: 10,

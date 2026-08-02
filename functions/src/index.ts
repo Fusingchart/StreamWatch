@@ -22,6 +22,7 @@ const REGION = 'us-central1';
 const GEMINI_API_KEY = defineSecret('GEMINI_API_KEY');
 const GEMINI_MODEL = 'gemini-2.5-flash';
 const GEMINI_CLASSES = ['oil_sheen', 'foam_suds', 'discoloration', 'algal_bloom', 'solid_debris', 'clean_water'];
+const GEMINI_TURBIDITY_LEVELS = ['clear', 'slight', 'moderate', 'severe'];
 
 const GEMINI_PROMPT = `You are a water pollution classifier for a citizen-science app. Look at this photo of a waterway (river, lake, or shoreline) and classify it into exactly one of these categories:
 
@@ -32,8 +33,16 @@ const GEMINI_PROMPT = `You are a water pollution classifier for a citizen-scienc
 - solid_debris: visible trash, litter, or solid waste in or floating on the water
 - clean_water: normal, clear water with no signs of pollution
 
+Separately, estimate the water's turbidity (cloudiness from suspended particles, independent of color) as one of:
+- clear: can see clearly into the water, no visible cloudiness
+- slight: mildly hazy but still mostly see-through
+- moderate: noticeably cloudy, hard to see below the surface
+- severe: opaque or near-opaque, cannot see into the water at all
+
+This is a visual estimate, not a calibrated instrument reading, so judge only from what's visible in the photo.
+
 Respond with ONLY a JSON object, no markdown formatting, no explanation, in this exact shape:
-{"pollutionClass": "<one of the categories above>", "confidence": <number 0 to 1>, "reasoning": "<one short sentence>"}`;
+{"pollutionClass": "<one of the categories above>", "confidence": <number 0 to 1>, "turbidity": "<one of the turbidity levels above>", "reasoning": "<one short sentence>"}`;
 
 // Proxies the vision classification call so the Gemini API key never ships
 // inside the app bundle. EXPO_PUBLIC_ vars are embedded in the client JS
@@ -84,8 +93,9 @@ export const classifyPollution = onCall(
     const parsed = JSON.parse(text.replace(/```json|```/g, '').trim());
     const pollutionClass = GEMINI_CLASSES.includes(parsed.pollutionClass) ? parsed.pollutionClass : 'clean_water';
     const confidence = typeof parsed.confidence === 'number' ? parsed.confidence : 0.75;
+    const turbidity = GEMINI_TURBIDITY_LEVELS.includes(parsed.turbidity) ? parsed.turbidity : 'clear';
 
-    return { pollutionClass, confidence };
+    return { pollutionClass, confidence, turbidity };
   }
 );
 

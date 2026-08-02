@@ -16,10 +16,17 @@ import { assignWaterway } from '../../src/data/waterways';
 import DownstreamCard from '../../src/components/DownstreamCard';
 import { markResolved, reportSighting, hasReported } from '../../src/services/sightings';
 import { colors, font, radius, space } from '../../src/constants/theme';
+import { Turbidity } from '../../src/types';
 
 const SEV_COLOR  = { HIGH: colors.high, MEDIUM: colors.warning, NONE: colors.none };
 const SEV_BG     = { HIGH: colors.high + '18', MEDIUM: colors.warning + '18', NONE: colors.none + '18' };
 const SEV_BORDER = { HIGH: colors.high + '44', MEDIUM: colors.warning + '44', NONE: colors.none + '44' };
+const TURBIDITY_LABEL: Record<Turbidity, string> = {
+  clear: 'Clear',
+  slight: 'Slightly turbid',
+  moderate: 'Moderately turbid',
+  severe: 'Severely turbid',
+};
 
 function formatDate(date: Date): string {
   return date.toLocaleString('en-US', {
@@ -160,6 +167,9 @@ export default function SightingDetail() {
                 {confidence}%
               </Text>
             </View>
+            <Text style={[styles.turbidityText, isResolved && styles.textMuted]}>
+              {TURBIDITY_LABEL[sighting.turbidity]}
+            </Text>
           </View>
         </BlurView>
 
@@ -344,6 +354,7 @@ const styles = StyleSheet.create({
   confTrack: { flex: 1, height: 5, backgroundColor: colors.border, borderRadius: radius.full, overflow: 'hidden' },
   confFill: { height: '100%', borderRadius: radius.full },
   confPct: { fontSize: font.size.sm, fontWeight: font.weight.bold, width: 34, textAlign: 'right' },
+  turbidityText: { fontSize: font.size.sm, color: colors.textSecondary, marginTop: 8 },
 
   sevIcon: { width: 30, height: 30, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center' },
   sevBody: { flex: 1 },
