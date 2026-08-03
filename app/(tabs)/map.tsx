@@ -9,6 +9,7 @@ import { POLLUTION_CLASSES } from '../../src/constants/pollution';
 import { colors, font, radius, space } from '../../src/constants/theme';
 import { Sighting } from '../../src/types';
 import { computeWaterwayReportScores, WaterwayReportScore } from '../../src/data/waterways';
+import { clusterPoints, clusterBounds } from '../../src/utils/clustering';
 import FilterBar, { FilterOption } from '../../src/components/FilterBar';
 
 const SEV_OPTIONS: FilterOption[] = [
@@ -19,11 +20,17 @@ const SEV_OPTIONS: FilterOption[] = [
 ];
 
 const SEV_COLOR = { HIGH: colors.high, MEDIUM: colors.warning, NONE: colors.none };
+const SEV_RANK = { HIGH: 2, MEDIUM: 1, NONE: 0 };
 
 const INITIAL_REGION = {
   latitude: 47.9, longitude: -122.1,
   latitudeDelta: 0.8, longitudeDelta: 0.8,
 };
+
+// Below this zoom (region.latitudeDelta), pins are shown individually.
+// Above it, nearby pins collapse into a count bubble so a zoomed-out view
+// of the whole district doesn't turn into an unreadable pile of markers.
+const CLUSTER_ZOOM_THRESHOLD = 0.15;
 
 function scoreColor(score: number): string {
   if (score >= 80) return colors.none;
@@ -101,10 +108,21 @@ export default function MapScreen() {
   const [selected, setSelected] = useState<Sighting | null>(null);
   const [view, setView] = useState<'sightings' | 'score'>('sightings');
   const [sevFilter, setSevFilter] = useState('ALL');
+  const [region, setRegion] = useState(INITIAL_REGION);
 
   const visibleSightings = useMemo(() =>
     sevFilter === 'ALL' ? sightings : sightings.filter((s) => s.severity === sevFilter),
   [sightings, sevFilter]);
+
+  const clusters = useMemo(() => {
+    if (region.latitudeDelta < CLUSTER_ZOOM_THRESHOLD) {
+      return visibleSightings.map((s) => ({
+        key: s.id, latitude: s.latitude, longitude: s.longitude, points: [s],
+      }));
+    }
+    const cellSize = region.latitudeDelta / 15;
+    return clusterPoints(visibleSightings, (s) => s, cellSize);
+  }, [visibleSightings, region.latitudeDelta]);
 
   const reportScores = useMemo(() => computeWaterwayReportScores(sightings), [sightings]);
   const overallScore = useMemo(() => {
@@ -142,35 +160,61 @@ export default function MapScreen() {
         style={StyleSheet.absoluteFill}
         provider={PROVIDER_DEFAULT}
         initialRegion={INITIAL_REGION}
+        onRegionChangeComplete={setRegion}
         mapType="mutedStandard"
         userInterfaceStyle="dark"
         showsUserLocation
         showsCompass={false}
         showsScale={false}
       >
-        {visibleSightings.map((s) => {
-          const pinColor = s.resolved ? colors.textMuted : SEV_COLOR[s.severity];
+        {clusters.map((cluster) => {
+          if (cluster.points.length === 1) {
+            const s = cluster.points[0];
+            const pinColor = s.resolved ? colors.textMuted : SEV_COLOR[s.severity];
+            return (
+              <Marker
+                key={cluster.key}
+                coordinate={{ latitude: s.latitude, longitude: s.longitude }}
+                onPress={() => { setSelected(s); setView('sightings'); }}
+                accessibilityLabel={`${POLLUTION_CLASSES[s.pollutionClass]?.label ?? s.pollutionClass} sighting, ${s.severity} severity`}
+              >
+                <View style={[styles.pin, { borderColor: pinColor, opacity: s.resolved ? 0.5 : 1 }]}>
+                  <View style={[styles.pinDot, { backgroundColor: pinColor }]} />
+                </View>
+                <Callout tooltip>
+                  <View style={styles.callout}>
+                    <Text style={styles.calloutClass}>
+                      {POLLUTION_CLASSES[s.pollutionClass]?.label ?? s.pollutionClass}
+                      {s.resolved ? '  ✓' : ''}
+                    </Text>
+                    <Text style={styles.calloutSub}>
+                      {s.county} · {Math.round(s.confidence * 100)}% confidence
+                    </Text>
+                  </View>
+                </Callout>
+              </Marker>
+            );
+          }
+
+          const worst = cluster.points.reduce((w, s) =>
+            !s.resolved && SEV_RANK[s.severity] > SEV_RANK[w.severity] ? s : w
+          , cluster.points[0]);
+          const clusterColor = cluster.points.every((s) => s.resolved) ? colors.textMuted : SEV_COLOR[worst.severity];
+
           return (
-          <Marker
-            key={s.id}
-            coordinate={{ latitude: s.latitude, longitude: s.longitude }}
-            onPress={() => { setSelected(s); setView('sightings'); }}
-          >
-            <View style={[styles.pin, { borderColor: pinColor, opacity: s.resolved ? 0.5 : 1 }]}>
-              <View style={[styles.pinDot, { backgroundColor: pinColor }]} />
-            </View>
-            <Callout tooltip>
-              <View style={styles.callout}>
-                <Text style={styles.calloutClass}>
-                  {POLLUTION_CLASSES[s.pollutionClass]?.label ?? s.pollutionClass}
-                  {s.resolved ? '  ✓' : ''}
-                </Text>
-                <Text style={styles.calloutSub}>
-                  {s.county} · {Math.round(s.confidence * 100)}% confidence
-                </Text>
+            <Marker
+              key={cluster.key}
+              coordinate={{ latitude: cluster.latitude, longitude: cluster.longitude }}
+              onPress={() => {
+                setSelected(null);
+                mapRef.current?.animateToRegion(clusterBounds(cluster.points, (s) => s), 500);
+              }}
+              accessibilityLabel={`${cluster.points.length} sightings in this area, tap to zoom in`}
+            >
+              <View style={[styles.clusterPin, { borderColor: clusterColor }]}>
+                <Text style={[styles.clusterCount, { color: clusterColor }]}>{cluster.points.length}</Text>
               </View>
-            </Callout>
-          </Marker>
+            </Marker>
           );
         })}
       </MapView>
@@ -329,6 +373,13 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   pinDot: { width: 8, height: 8, borderRadius: 4 },
+
+  clusterPin: {
+    minWidth: 30, height: 30, borderRadius: 15, paddingHorizontal: 6,
+    borderWidth: 2, backgroundColor: 'rgba(0,0,0,0.85)',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  clusterCount: { fontSize: 13, fontWeight: font.weight.bold },
 
   callout: {
     backgroundColor: 'rgba(28,28,30,0.95)',
