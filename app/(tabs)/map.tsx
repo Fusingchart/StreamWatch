@@ -1,10 +1,9 @@
-import { useEffect, useRef, useState, useMemo } from 'react';
+import { useRef, useState, useMemo } from 'react';
 import { View, Text, StyleSheet, StatusBar, TouchableOpacity, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
 import MapView, { Marker, Callout, PROVIDER_DEFAULT } from 'react-native-maps';
 import * as Location from 'expo-location';
-import { subscribeSightings } from '../../src/services/sightings';
 import { useAppStore } from '../../src/store';
 import { POLLUTION_CLASSES } from '../../src/constants/pollution';
 import { colors, font, radius, space } from '../../src/constants/theme';
@@ -68,7 +67,12 @@ function WaterwayCard({
   const barWidth = `${score}%` as any;
 
   return (
-    <TouchableOpacity onPress={onPress} activeOpacity={0.75}>
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.75}
+      accessibilityRole="button"
+      accessibilityLabel={`${waterway.name}, report score ${score} of 100, ${trend}. Fly to on map`}
+    >
       <BlurView intensity={55} tint="dark" style={styles.waterwayCard}>
         <View style={[styles.waterwayAccent, { backgroundColor: color }]} />
         <View style={styles.waterwayBody}>
@@ -94,15 +98,9 @@ function WaterwayCard({
 export default function MapScreen() {
   const mapRef = useRef<MapView>(null);
   const sightings = useAppStore((s) => s.sightings);
-  const setSightings = useAppStore((s) => s.setSightings);
   const [selected, setSelected] = useState<Sighting | null>(null);
   const [view, setView] = useState<'sightings' | 'score'>('sightings');
   const [sevFilter, setSevFilter] = useState('ALL');
-
-  useEffect(() => {
-    const unsub = subscribeSightings(setSightings);
-    return unsub;
-  }, []);
 
   const visibleSightings = useMemo(() =>
     sevFilter === 'ALL' ? sightings : sightings.filter((s) => s.severity === sevFilter),
@@ -193,6 +191,9 @@ export default function MapScreen() {
             <TouchableOpacity
               onPress={() => setView('sightings')}
               style={[styles.toggleBtn, view === 'sightings' && styles.toggleActive]}
+              accessibilityRole="button"
+              accessibilityLabel="Show reports view"
+              accessibilityState={{ selected: view === 'sightings' }}
             >
               <Text style={[styles.toggleText, view === 'sightings' && styles.toggleTextActive]}>
                 Reports
@@ -201,6 +202,9 @@ export default function MapScreen() {
             <TouchableOpacity
               onPress={() => { setView('score'); setSelected(null); }}
               style={[styles.toggleBtn, view === 'score' && styles.toggleActive]}
+              accessibilityRole="button"
+              accessibilityLabel="Show waterway score view"
+              accessibilityState={{ selected: view === 'score' }}
             >
               <Text style={[styles.toggleText, view === 'score' && styles.toggleTextActive]}>
                 Score
@@ -220,7 +224,13 @@ export default function MapScreen() {
         )}
 
         {/* Locate me */}
-        <TouchableOpacity style={styles.locateBtn} onPress={centerOnUser} activeOpacity={0.8}>
+        <TouchableOpacity
+          style={styles.locateBtn}
+          onPress={centerOnUser}
+          activeOpacity={0.8}
+          accessibilityRole="button"
+          accessibilityLabel="Center map on my location"
+        >
           <BlurView intensity={60} tint="dark" style={styles.locateBtnInner}>
             <Text style={styles.locateIcon}>⊙</Text>
           </BlurView>
@@ -262,7 +272,12 @@ export default function MapScreen() {
                 {selected.latitude.toFixed(4)}, {selected.longitude.toFixed(4)}
               </Text>
             </View>
-            <TouchableOpacity onPress={() => setSelected(null)} style={styles.closeBtn}>
+            <TouchableOpacity
+              onPress={() => setSelected(null)}
+              style={styles.closeBtn}
+              accessibilityRole="button"
+              accessibilityLabel="Close sighting details"
+            >
               <Text style={styles.closeText}>✕</Text>
             </TouchableOpacity>
           </BlurView>

@@ -167,7 +167,10 @@ function overlayStreamWatch(
   let level = base;
   if (highNearby.length > 0) {
     level = level === 'SAFE' ? 'CAUTION' : 'AVOID';
-  } else if (nearby.length > 0 && level === 'SAFE') {
+  } else if (nearby.length > 0 && (level === 'SAFE' || level === 'UNKNOWN')) {
+    // Also escalate UNKNOWN (no official monitoring data), not just SAFE —
+    // a beach with no official source but a nearby medium-severity report
+    // shouldn't still read as "no data" when there's a real signal.
     level = 'CAUTION';
   }
 

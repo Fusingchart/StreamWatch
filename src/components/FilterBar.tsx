@@ -29,6 +29,9 @@ export default function FilterBar({ options, value, onChange }: Props) {
             key={opt.key}
             onPress={() => onChange(opt.key)}
             activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel={`Filter: ${opt.label}`}
+            accessibilityState={{ selected: active }}
             style={[
               styles.pill,
               active

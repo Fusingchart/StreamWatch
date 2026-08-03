@@ -251,13 +251,25 @@ export default function CameraScreen() {
           </BlurView>
         ) : (
           <View style={styles.actionsRow}>
-            <TouchableOpacity onPress={pickFromLibrary} activeOpacity={0.8} style={styles.galleryBtn}>
+            <TouchableOpacity
+              onPress={pickFromLibrary}
+              activeOpacity={0.8}
+              style={styles.galleryBtn}
+              accessibilityRole="button"
+              accessibilityLabel="Choose photo from library"
+            >
               <BlurView intensity={50} tint="dark" style={styles.galleryBtnInner}>
                 <ImagePlus size={20} color="#fff" strokeWidth={2} />
               </BlurView>
             </TouchableOpacity>
 
-            <TouchableOpacity onPress={capture} activeOpacity={0.85} style={styles.shutterWrapper}>
+            <TouchableOpacity
+              onPress={capture}
+              activeOpacity={0.85}
+              style={styles.shutterWrapper}
+              accessibilityRole="button"
+              accessibilityLabel="Take photo"
+            >
               <View style={styles.shutterOuter}>
                 <View style={styles.shutterInner} />
               </View>

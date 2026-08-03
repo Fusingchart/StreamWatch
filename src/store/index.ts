@@ -5,6 +5,7 @@ interface AppState {
   userId: string | null;
   authError: string | null;
   sightings: Sighting[];
+  sightingsLoaded: boolean;
   pendingResult: ClassificationResult | null;
   pendingPhotoUri: string | null;
 
@@ -20,12 +21,13 @@ export const useAppStore = create<AppState>((set) => ({
   userId: null,
   authError: null,
   sightings: [],
+  sightingsLoaded: false,
   pendingResult: null,
   pendingPhotoUri: null,
 
   setUserId: (id) => set({ userId: id, authError: null }),
   setAuthError: (message) => set({ authError: message }),
-  setSightings: (sightings) => set({ sightings }),
+  setSightings: (sightings) => set({ sightings, sightingsLoaded: true }),
   addSighting: (sighting) =>
     set((state) => ({ sightings: [sighting, ...state.sightings] })),
   setPendingResult: (result, photoUri) =>

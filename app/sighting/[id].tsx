@@ -273,7 +273,12 @@ export default function SightingDetail() {
 
       {/* Floating nav, rendered after the ScrollView so it stays on top for touches */}
       <SafeAreaView edges={['top']} style={styles.navWrap} pointerEvents="box-none">
-        <TouchableOpacity onPress={() => router.back()} activeOpacity={0.75}>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          activeOpacity={0.75}
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
+        >
           <BlurView intensity={55} tint="dark" style={styles.backBtn}>
             <ChevronLeft size={18} color="#fff" strokeWidth={2.5} />
           </BlurView>
@@ -282,6 +287,9 @@ export default function SightingDetail() {
           onPress={handleReport}
           disabled={reported || reporting}
           activeOpacity={0.75}
+          accessibilityRole="button"
+          accessibilityLabel={reported ? 'Already reported' : 'Report this photo'}
+          accessibilityState={{ disabled: reported || reporting }}
         >
           <BlurView intensity={55} tint="dark" style={styles.backBtn}>
             <Flag size={16} color={reported ? colors.textMuted : '#fff'} strokeWidth={2} />

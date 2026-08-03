@@ -51,7 +51,13 @@ function BeachCard({ spot, result, expanded, onPress }: CardProps) {
   const Icon = cfg.icon;
 
   return (
-    <TouchableOpacity onPress={onPress} activeOpacity={0.8}>
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.8}
+      accessibilityRole="button"
+      accessibilityLabel={`${spot.name}, ${cfg.label}, ${formatDistance(spot.distanceKm)} away`}
+      accessibilityState={{ expanded }}
+    >
       <BlurView intensity={45} tint="dark" style={[styles.card, { borderColor: expanded ? cfg.border : colors.border }]}>
         {/* Top row */}
         <View style={styles.cardTop}>
@@ -180,7 +186,13 @@ export default function SafetyScreen() {
               </Text>
             )}
           </View>
-          <TouchableOpacity onPress={onRefresh} style={styles.refreshBtn} activeOpacity={0.7}>
+          <TouchableOpacity
+            onPress={onRefresh}
+            style={styles.refreshBtn}
+            activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel="Refresh beach conditions"
+          >
             <BlurView intensity={40} tint="dark" style={styles.refreshInner}>
               <RefreshCw size={16} color={colors.primary} strokeWidth={2} />
             </BlurView>

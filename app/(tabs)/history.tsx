@@ -1,12 +1,11 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import {
   View, Text, FlatList, StyleSheet,
-  StatusBar, TouchableOpacity,
+  StatusBar, TouchableOpacity, ActivityIndicator,
 } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
-import { subscribeSightings } from '../../src/services/sightings';
 import { useAppStore } from '../../src/store';
 import { POLLUTION_CLASSES } from '../../src/constants/pollution';
 import { colors, font, radius, space } from '../../src/constants/theme';
@@ -77,14 +76,9 @@ function SightingCard({ item }: { item: Sighting }) {
 
 export default function HistoryScreen() {
   const sightings = useAppStore((s) => s.sightings);
-  const setSightings = useAppStore((s) => s.setSightings);
+  const sightingsLoaded = useAppStore((s) => s.sightingsLoaded);
   const [sevFilter, setSevFilter] = useState('ALL');
   const [classFilter, setClassFilter] = useState('ALL');
-
-  useEffect(() => {
-    const unsub = subscribeSightings(setSightings);
-    return unsub;
-  }, []);
 
   const filtered = useMemo(() => sightings.filter((s) => {
     if (sevFilter !== 'ALL' && s.severity !== sevFilter) return false;
@@ -129,17 +123,24 @@ export default function HistoryScreen() {
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
-            <View style={styles.empty}>
-              <Droplets size={52} color={colors.textMuted} strokeWidth={1.2} />
-              <Text style={styles.emptyTitle}>
-                {activeFilters > 0 ? 'No matches' : 'No sightings yet'}
-              </Text>
-              <Text style={styles.emptyBody}>
-                {activeFilters > 0
-                  ? 'Try adjusting the filters above.'
-                  : 'Go to Report and take a photo of any waterway to submit the first sighting.'}
-              </Text>
-            </View>
+            !sightingsLoaded ? (
+              <View style={styles.empty}>
+                <ActivityIndicator color={colors.primary} size="large" />
+                <Text style={[styles.emptyBody, { marginTop: 16 }]}>Loading sightings…</Text>
+              </View>
+            ) : (
+              <View style={styles.empty}>
+                <Droplets size={52} color={colors.textMuted} strokeWidth={1.2} />
+                <Text style={styles.emptyTitle}>
+                  {activeFilters > 0 ? 'No matches' : 'No sightings yet'}
+                </Text>
+                <Text style={styles.emptyBody}>
+                  {activeFilters > 0
+                    ? 'Try adjusting the filters above.'
+                    : 'Go to Report and take a photo of any waterway to submit the first sighting.'}
+                </Text>
+              </View>
+            )
           }
         />
       </SafeAreaView>

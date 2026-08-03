@@ -4,12 +4,22 @@ import { AppState } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { signInAnon } from '../src/services/firebase';
+import { subscribeSightings } from '../src/services/sightings';
 import { useAppStore } from '../src/store';
 import { ONBOARDING_KEY } from './onboarding';
 
 export default function RootLayout() {
   const setUserId = useAppStore((s) => s.setUserId);
   const setAuthError = useAppStore((s) => s.setAuthError);
+  const setSightings = useAppStore((s) => s.setSightings);
+
+  // Subscribed once here (not per-screen) so every tab has sightings data
+  // and an accurate loaded state as soon as the app opens, regardless of
+  // which tab the user lands on first.
+  useEffect(() => {
+    const unsub = subscribeSightings(setSightings);
+    return unsub;
+  }, []);
 
   useEffect(() => {
     function trySignIn() {

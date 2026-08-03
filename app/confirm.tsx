@@ -158,7 +158,12 @@ export default function ConfirmScreen() {
       <SafeAreaView style={{ flex: 1 }}>
         {/* Nav */}
         <View style={styles.nav}>
-          <TouchableOpacity onPress={handleDiscard} activeOpacity={0.7}>
+          <TouchableOpacity
+            onPress={handleDiscard}
+            activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel="Discard report and go back"
+          >
             <BlurView intensity={50} tint="dark" style={styles.navBtn}>
               <ChevronLeft size={18} color="#fff" strokeWidth={2.5} />
             </BlurView>
@@ -220,6 +225,9 @@ export default function ConfirmScreen() {
               disabled={submitting}
               activeOpacity={0.85}
               style={[styles.submitBtn, submitting && { opacity: 0.6 }]}
+              accessibilityRole="button"
+              accessibilityLabel="Submit report"
+              accessibilityState={{ disabled: submitting, busy: submitting }}
             >
               {submitting
                 ? <ActivityIndicator color="#fff" />
