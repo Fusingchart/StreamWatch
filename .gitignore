@@ -11,7 +11,9 @@ yarn-debug.*
 yarn-error.*
 .DS_Store
 *.pem
-ios/
+ios/Pods/
+ios/build/
+ios/DerivedData/
 android/
 firebase-debug.log
 functions/lib/
